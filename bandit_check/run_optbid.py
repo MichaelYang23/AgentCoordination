@@ -71,9 +71,10 @@ for ax, (thH, (C, Bs, tau, bp)) in zip(axes, curves.items()):
     ax.set_title("r = %g" % (thH / 0.5), fontsize=10)
     ax.set_xlabel("Team budget B")
 axes[0].set_ylabel("Learning premium V − W")
-axes[0].legend(loc="upper left", fontsize=7)
+axes[-1].legend(loc="lower right", fontsize=7)
 fig.suptitle("Letting the planner choose the probing bid closes most of the gap (World A, pi0 = 0.5, K = 100)", fontsize=10.5)
 fig.tight_layout()
 fig.savefig(os.path.join(RES, "fig_optbid_premium.png"), dpi=170)
+np.savez_compressed(os.path.join(RES, "optbid_curves.npz"), **{"thH%g_%s" % (t, k): curves[t][0][k] for t in curves for k in ("grid", "W", "etc_exact", "etc_optbid", "ce_A")})
 np.savetxt(os.path.join(RES, "optbid_agreement.csv"), np.array([(t, 0 if r == "etc_exact" else 1, a, o) for t, r, a, o in rows]),
            delimiter=",", header="thH,ref_is_optbid,agree_with_ce_A,opposite", comments="", fmt="%.4g")

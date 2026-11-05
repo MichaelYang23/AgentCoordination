@@ -90,9 +90,10 @@ def main():
     lines = []
     names = {0: "R0 no shift (nobody learns, low T)", 1: "R1 ETC more skewed (low T)",
              2: "R2 ETC more balanced", 3: "R3 tail (after ETC's last balanced T)"}
+    full = [(c, d) for c, d in data if c[2] == 100]   # the full factorial (25 markets x 5 value ratios)
     for ref in ("etc_smooth", "etc_exact"):
-        tab = regime_table(data, ref, [k for k in AG if k != ref])
-        lines.append("\n=== agreement by ETC regime, reference %s (share of T with same sign / opposite sign) ===" % ref)
+        tab = regime_table(full, ref, [k for k in AG if k != ref])
+        lines.append("\n=== K=100 factorial: agreement by ETC regime, reference %s (share of T with same sign / opposite sign) ===" % ref)
         lines.append("%-38s" % "regime" + "".join("%17s" % k for k in tab))
         for r in (0, 1, 2, 3):
             row = "%-38s" % names[r]
@@ -108,14 +109,26 @@ def main():
             row += "%17s" % ("%.2f / %.2f" % (ag / n, op / n) if n else "-")
         lines.append(row)
         lines.append("%-38s" % "n(T points) per regime: " + ", ".join("R%d=%d" % (r, tab[list(tab)[0]][r][2]) for r in (0, 1, 2, 3)))
+    # horizon effect on a matched subset (thH = 8, pi0 in {0.35, 0.5, 0.65})
+    lines.append("\n=== R1+R2 agreement with etc_smooth by K, matched subset thH=8, pi0 in {.35,.5,.65} ===")
+    for k in ("etc_exact", "ce_A", "opt_B", "ts_B", "etc_B"):
+        row = "  %-10s" % k
+        for K in (50, 100, 200):
+            sub = [(c, d) for c, d in data if c[2] == K and c[0] == 8.0 and c[1] in (0.35, 0.5, 0.65)]
+            if not sub:
+                continue
+            t = regime_table(sub, "etc_smooth", [k])[k]
+            n = t[1][2] + t[2][2]
+            row += "  K=%d: %.2f" % (K, (t[1][0] + t[2][0]) / n if n else np.nan)
+        lines.append(row)
     # regime agreement by parameter for the key bandits
-    for k in ("ce_A", "opt_B"):
-        lines.append("\n=== %s vs etc_smooth: R1+R2 agreement by parameter ===" % k)
-        for name, idx in (("thH", 0), ("pi0", 1), ("K", 2), ("v1/v2", 3)):
-            vals = sorted(set(c[idx] for c, _ in data))
+    for k in ("etc_exact", "ce_A", "opt_B", "etc_B"):
+        lines.append("\n=== K=100 factorial, %s vs etc_smooth: R1+R2 agreement by parameter ===" % k)
+        for name, idx in (("thH", 0), ("pi0", 1), ("v1/v2", 3)):
+            vals = sorted(set(c[idx] for c, _ in full))
             row = "  by %-6s" % name
             for val in vals:
-                sub = [(c, d) for c, d in data if c[idx] == val]
+                sub = [(c, d) for c, d in full if c[idx] == val]
                 t = regime_table(sub, "etc_smooth", [k])[k]
                 ag = t[1][0] + t[2][0]
                 n = t[1][2] + t[2][2]
@@ -175,6 +188,22 @@ def main():
     print(txt)
     with open(os.path.join(RES, "sweep_summary.txt"), "w") as f:
         f.write(txt + "\n")
+    # per-configuration table (the definitive machine-readable output)
+    import csv
+    with open(os.path.join(RES, "sweep_regime_agreement.csv"), "w", newline="") as f:
+        w = csv.writer(f)
+        w.writerow(["thH", "r", "pi0", "K", "v1_over_v2", "agent", "regime", "n_T", "share_same_sign", "share_opposite_sign"])
+        for (thH, pi0, K, v), d in data:
+            T = d["T"]
+            lab = etc_regimes(T, d["etc_smooth"])
+            a = sgn(d["etc_smooth"], T)
+            for k in AG:
+                b = sgn(d[k], T)
+                for r in (0, 1, 2, 3):
+                    m = lab == r
+                    if m.any():
+                        w.writerow([thH, thH / 0.5, pi0, K, v, k, r, int(m.sum()),
+                                    round(float(np.mean(a[m] == b[m])), 4), round(float(np.mean(a[m] * b[m] < 0)), 4)])
 
     # ---------------- figures ----------------
     ps.setup()
@@ -184,18 +213,21 @@ def main():
     fig, axes = plt.subplots(1, 3, figsize=(12, 3.6))
     for ax, k in zip(axes, ("etc_exact", "ce_A", "opt_B")):
         M = np.full((len(pi_vals), len(th_vals)), np.nan)
-        for (thH, pi0, K, v), d in data:
-            if K != 100 or v != 2.0:
-                continue
-            T = d["T"]
-            mask = (T / K >= 0.2) & (T / K <= 4.0)
-            M[pi_vals.index(pi0), th_vals.index(thH)] = agree(d["etc_smooth"], d[k], T, mask)[0]
-        im = ax.imshow(M, origin="lower", cmap="Blues", vmin=0.5, vmax=1.0, aspect="auto")
+        for thH in th_vals:
+            for pi0 in pi_vals:
+                sub = [(c, d) for c, d in data if c[2] == 100 and c[0] == thH and c[1] == pi0]
+                if not sub:
+                    continue
+                t = regime_table(sub, "etc_smooth", [k])[k]
+                n = t[1][2] + t[2][2]
+                if n:
+                    M[pi_vals.index(pi0), th_vals.index(thH)] = (t[1][0] + t[2][0]) / n
+        im = ax.imshow(M, origin="lower", cmap="Blues", vmin=0.0, vmax=1.0, aspect="auto")
         for i in range(len(pi_vals)):
             for j in range(len(th_vals)):
                 if not np.isnan(M[i, j]):
                     ax.text(j, i, "%.0f%%" % (100 * M[i, j]), ha="center", va="center", fontsize=8,
-                            color="#ffffff" if M[i, j] > 0.8 else ps.INK)
+                            color="#ffffff" if M[i, j] > 0.6 else ps.INK)
         ax.set_xticks(range(len(th_vals)))
         ax.set_xticklabels(["%g" % (t / 0.5) for t in th_vals])
         ax.set_yticks(range(len(pi_vals)))
@@ -204,8 +236,8 @@ def main():
         ax.set_title(ps.LABELS[k], fontsize=9.5)
         ax.grid(False)
     axes[0].set_ylabel("prior pi0 = P(hard market)")
-    fig.suptitle("Sign agreement with the paper's ETC (smoothed), T/K in [0.2, 4], K=100, v1/v2=2", fontsize=10.5)
-    fig.colorbar(im, ax=axes, shrink=0.8, label="share of total budgets T with same sign")
+    fig.suptitle("Sign agreement with the paper's ETC (smoothed) inside its two regimes (R1+R2), K=100, all v1/v2", fontsize=10.5)
+    fig.colorbar(im, ax=axes, shrink=0.8, label="share of total budgets T with the same sign")
     fig.savefig(os.path.join(RES, "fig_sweep_agreement_heatmap.png"), dpi=170, bbox_inches="tight")
 
     # small multiples: shift vs T/K across separations (pi0 = 0.5, K = 100, v = 2)
@@ -222,7 +254,7 @@ def main():
             ax.set_title("r = %g" % (c[0] / 0.5), fontsize=10)
             ax.set_xlabel("T / K")
         axes[0].set_ylabel("shift (a^X − a^E) / K  ×100")
-        axes[0].legend(loc="lower left", fontsize=7)
+        axes[min(3, len(axes) - 1)].legend(loc="lower left", fontsize=7)
         fig.suptitle("Allocation shift vs total budget, by state separation (pi0 = 0.5, K = 100, v1/v2 = 2)", fontsize=10.5)
         fig.tight_layout()
         fig.savefig(os.path.join(RES, "fig_sweep_shift_by_r.png"), dpi=170)

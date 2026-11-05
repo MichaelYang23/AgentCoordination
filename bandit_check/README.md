@@ -9,7 +9,31 @@
 
 ## 0. 结论速览
 
-{{TLDR}}
+1. **同意这个策略，但要换一种论证。** 论文的 Theorem 1 对*任何*学习技术诱导的价值函数 V 都成立：
+   分配方向只取决于边际价值比 V′/W′ 在两个预算之间是升还是降。所以要证明的不是"ETC 的价值接近 bandit"
+   （它不接近：高预算时差很多），而是"**ETC 推出的 V′/W′ 形状与 bandit 相同**"。"bandit 无法解析"也要说得更准：
+   本模型的 Bayes-optimal 策略可以用动态规划精确数值求解（这里就做了），做不到的是闭式比较静态。
+2. **在你们的预算会计下，结论对"边做边学"很稳健。** 基准参数下，每次拍卖后更新信念、每期重新 pacing 的
+   Bayesian agent 复现了同样的区间：更偏斜 T∈[87, 193)、更平衡 T∈[193, 2880)；ETC 为 [84, 185)、[185, 1940)。
+   换成"同样按钱包 pacing、但不更新信念"的基准，分配方向一致率 95%，切换点同为 T≈185。
+3. **在哪些参数上一致（K=100 全因子：25 个市场 × 5 个价值比，另做 K=50/200 匹配子集）。**
+   在论文强调的两个区间里，边做边学 agent 与 smoothed ETC 的方向一致率为 **92%**（相反符号 4%）——
+   和论文自己的 exact ETC 与 smoothed ETC 之间的一致率（91%）一样高。
+   关键参数是状态分离度 r=θ_H/θ_L：**r≥16 时 95–96%，r=8 时 87%，r=4 时只有 20%**（此时论文的 exact 与
+   smoothed 模型彼此也只有 42–83% 一致）。π₀∈[0.2, 0.8]、v₁/v₂∈[1.25, 4] 和 K 的影响都小（π₀=0.8 时略低，86%）。
+   **不一致**集中在三处：区间切换点附近的窄带；**尾部**（slides 中 T=3000 的"再集中"，一致率只有 16%，
+   但那里重新分配的价值只有约 0.01 加权曝光，T=100 时是 0.1–0.16）；以及 r=4。
+4. **不一致的根源是固定的探测出价 b^I=√(θ_Lθ_H)，可以在 ETC 框架内修正。** 让规划者同时选探测出价
+   （仍然是"先纯学习、后纯执行"，w 仍是充分统计量），ETC 的学习溢价在 B≥200 时与边做边学 agent 相差 <0.06，
+   r=8 时方向一致率从 48% 升到 81%。这是我最推荐写进论文的扩展。
+5. **必须说明的建模选择：预算会计方式。** 学习窗口的下边界主要来自"按当前信念花完钱包"的会计——
+   低预算时**连免费的完美信息都会降低价值**（基准下 B<45.5）——所以任何学习协议都有这个下边界；
+   但在 ex-ante 会计（bandits-with-knapsacks 文献常用）下它消失。在 ex-ante 会计下 Bayes-optimal、
+   myopic Bayesian、Thompson 几乎一样，两段结构仍在（两区间内一致率 82%），但"更偏斜"弱很多（+1 vs +5），切换点后移（基准 T≈275）。
+6. **Token allocation：在 orchestrator 层面是好的 proxy，但微观机制要重写。** 同一个预算既买产出又买信息，
+   这在 LLM agent 上更明显；但 token 是"不论成败都付费"，会拆掉 RTB 里"花费依赖未知状态"的机制——
+   在最简单的映射下信息甚至没有价值——所以学习的价值要来自停止、选方法或再分配；还要处理价值不可加、
+   信息共享和多维预算（美元、延迟、上下文窗口）。详见第 6 节。
 
 ---
 
@@ -41,7 +65,8 @@ Bayes-optimal 的自适应策略按定义弱优于 ETC。基准参数下（θ_L=
 | 250 | 1.87 | 2.16 | 2.20 | 2.59 | 2.52 |
 | 1000 | 0.55 | 0.88 | 1.58 | 3.00 | 1.74 |
 
-在中等预算下 ETC 拿到了"免费完美信息价值"的 75–85%，高预算下明显落后（因为探测出价 b^I 被压在低位，放弃了本来买得起的胜利）。
+在中等预算下 ETC 拿到了"免费完美信息价值"的 74–87%，高预算下只有 30–50%（因为探测出价 b^I 被压在低位，
+放弃了本来买得起的胜利）。（两种会计方式下的数字只作量级参考；同一会计方式下的比较见第 3 节。）
 所以 reviewer 说"bandit 价值更高"是对的；但论文问的是**分配方向**，价值占优并不推出方向不同——这一点要在回复里明确说出来。
 
 ### 1.3 "Bandit 无法解析"需要说得更精确
@@ -113,8 +138,8 @@ W 在 t=0 承诺一次；ETC 承诺两次（t=0 与交接时）。这个会计�
    自适应停止 ETC 是 46.1。
 2. **上边界不同。** ETC 的溢价在 B≈2300（exact）/ 2666（smoothed）归零，因为探测出价 b^I=2 在高预算下
    放弃了本来买得起的胜利；CE 不付这个成本，溢价在 B=4000 仍有 0.37。
-3. **对会继续学习的 agent，专门的探测阶段没有价值。** "先在 b^I 探测 τ 期、再 CE"的最优 τ 永远是 0
-   （所有配置里最大增益 < 0.001）。ETC 里的 τ 本质上是在替代"exploitation agent 不再更新信念"。
+3. **对会继续学习的 agent，专门的探测阶段几乎没有价值。** "先在 b^I 探测 τ 期、再 CE"的最优 τ 几乎总是 0
+   （37 个配置里最大增益 0.0076 个曝光）。ETC 里的 τ 本质上是在替代"exploitation agent 不再更新信念"。
 4. **Theorem 1 读取的对象 V′/W′ 在论文会计下几乎同形。** 两者都在进入时向上跳（CE 1.17，ETC 1.22），
    随后单调下降，在 B≈350（ETC 256）穿过 1，在 B≈1000–2000 见底（ETC 991）。
 5. **ex-ante 会计（世界 B）。** Bayes-optimal、myopic Bayesian、Thompson 的溢价处处为正，没有下边界；
@@ -176,11 +201,95 @@ senior 预算的偏移 a^X − a^E（正 = 更偏斜）：
 * **世界 B：两个区间仍在，但"更偏斜"很弱（+1 vs +5），切换点后移到 T≈275，而且没有尾部再集中。**
   这里的"更偏斜"不是因为 junior 学不起，而是因为低预算时 V′/W′ 在上升（预算与学习互补，对应论文的交叉偏导恒等式）。
 
+### 3.4 换一个基准：不学习、但也按钱包重新 pacing 的 agent
+
+有人会说：CE 每期按真实钱包重新 pacing，而 W 是开环的，比较里混进了"跟踪钱包"的效应。
+所以再做一个对照：基准换成**信念固定在先验、但每期按真实钱包重新 pacing** 的 agent（标准的 pacing 算法），
+学习者是在同一 pacing 规则上加 Bayesian 更新（`run_pacer_benchmark.py`）。
+
+![pacer 基准](results/fig_pacer_benchmark.png)
+
+* Bayesian 更新相对这个基准的价值在 B<47.7 时仍为负——下边界依然存在。
+* 分配偏移的符号与论文 ETC 一致的比例为 **95%**（T∈[20, 1990]，相反符号只有 1.6%），
+  偏斜→平衡的切换点同样在 **T≈185**（T=150：+4.4 vs +4.9；T=600：−11.5 vs −12.5）。
+
+### 3.5 不一致的根源：固定的探测出价 b^I，以及一个简单的修正
+
+ETC 的探测出价固定为 b^I=√(θ_Lθ_H)，与预算无关。预算大时 exploitation 出价远高于 b^I，探测意味着放弃大量买得起的胜利，
+所以 ETC 的溢价比边做边学的 agent 更早归零——这就是上边界和尾部差异的来源；状态差异小（r=4）时 b^I 更低，问题出现得更早。
+
+**修正：让规划者同时选择探测出价 b_p 和时长 τ。** 这仍然是"先纯学习、后纯执行"的结构，w 仍然是充分统计量
+（只是赢/输的对数似然步长不再对称），所以论文的解析框架可以保留（论文 slides 的 note 里也提到"jointly optimizing a
+constant learning bid and duration is an extension"）。结果（`run_optbid.py`，世界 A，π₀=½，K=100）：
+
+![探测出价](results/fig_optbid_premium.png)
+
+| r | 学习溢价峰值：ETC（b^I） | ETC（规划者选 b_p） | 边做边学 CE | 与 CE 的符号一致率：ETC（b^I） → ETC（选 b_p） |
+|---:|---:|---:|---:|---:|
+| 4 | 0.25 @ B=64 | 0.55 @ 174 | 0.52 @ 212 | 18% → 57% |
+| 8 | 0.91 @ 120 | 1.36 @ 239 | 1.34 @ 252 | 48% → 81% |
+| 16 | 1.88 @ 224 | 2.31 @ 330 | 2.29 @ 348 | 99% → 97%（T≤1200） |
+| 32 | 2.90 @ 373 | 3.27 @ 502 | 3.23 @ 503 | 99% → 98%（T≤1697） |
+
+（符号一致率在 T∈[0.2K, 12K·max(1,√(θ_H/8))] 上计算；r≥16 时这个范围还没进入尾部，所以两种 ETC 都几乎完全一致。）
+最优探测出价随预算上升（r=16 时 B=400 对应 b_p≈5.7，而 b^I=2），B≥200 时两者的溢价相差不到 0.06。
+剩下的差异集中在进入点附近：ETC 能"先少量探测、再停止学习"，比被动学习者更早开始赚钱（r=4 时 B=60：0.26 vs 0.05）。
+
 ---
 
 ## 4. 参数扫描：分配方向在哪些参数上一致？
 
-{{SWEEP}}
+**设定。** θ_L=½（只有 r=θ_H/θ_L 和以 θ_L 为单位的预算重要）。K=100 时 θ_H∈{2, 4, 8, 16, 32}（r=4–64）×
+π₀∈{0.2, 0.35, 0.5, 0.65, 0.8}；另外 K=50 时 θ_H∈{4, 8, 16} × π₀∈{0.35, 0.5, 0.65}，K=200 时 θ_H=8 × π₀∈{0.35, 0.5, 0.65}
+（论文已经表明结果按 B/K 缩放，所以 K=200 只做匹配子集）。每个配置取 v₁/v₂∈{1.25, 1.5, 2, 3, 4}，
+总预算 T 从 0.2K 到 12K·max(1, √(θ_H/8))，步长 K/100。对每个 T 计算 a^X − a^E，|shift| < 0.1+0.001T 记为 0。
+
+**按 ETC（smoothed，slides 版本）自己的区间分类**，因为固定的 T/K 区间会把不同 r 下的区间混在一起：
+R0 = 谁都不学（低 T）；R1 = ETC "更偏斜"；R2 = ETC "更平衡"；R3 = 尾部（ETC 最后一个"更平衡"的 T 之后：再集中或不再学习）。
+论文强调的两个结论都在 R1+R2 里。
+
+### 4.1 按区间的一致率（K=100 全因子，参照 = smoothed ETC；"同号 / 反号"，其余为一方 ≈0）
+
+| 区间 | ETC exact | ETC 自适应停止 | **边做边学 CE（A）** | Bayes-opt（B） | Thompson（B） | ETC（B） |
+|---|---:|---:|---:|---:|---:|---:|
+| R0 谁都不学 | 0.98 / 0.00 | 0.80 / 0.00 | 0.98 / 0.00 | 0.36 / 0.00 | 0.36 / 0.00 | 0.58 / 0.00 |
+| R1 ETC 更偏斜 | 0.90 / 0.00 | 0.81 / 0.10 | **0.83 / 0.00** | 0.86 / 0.01 | 0.86 / 0.01 | 0.74 / 0.13 |
+| R2 ETC 更平衡 | 0.91 / 0.04 | 0.95 / 0.03 | **0.93 / 0.04** | 0.81 / 0.10 | 0.82 / 0.10 | 0.91 / 0.04 |
+| **R1+R2（论文的两个结论）** | 0.91 / 0.04 | 0.94 / 0.03 | **0.92 / 0.04** | 0.82 / 0.09 | 0.82 / 0.09 | 0.89 / 0.05 |
+| R3 尾部 | 0.73 / 0.00 | 0.74 / 0.02 | 0.16 / 0.36 | 0.13 / 0.36 | 0.12 / 0.36 | 0.64 / 0.09 |
+
+（T 点数：R0 8,398；R1 13,634；R2 131,994；R3 36,024。世界 B 在 R0 的"不一致"是因为 ex-ante 会计下学习在任何预算都略有价值，偏移很小但不为零。）
+
+**读法：** 在论文的两个结论所在的区间里，边做边学 agent 与 slides 版 ETC 的方向一致率（92%）和论文自己的
+exact ETC 与 smoothed ETC 之间的一致率（91%）一样高——也就是说，"换成 bandit"带来的差异不比"换一种 ETC 近似"更大。
+反号只有 4%，而且集中在切换点附近。尾部是唯一系统性不一致的地方。
+
+### 4.2 哪些参数上一致（R1+R2 一致率，K=100）
+
+| 参数 | 取值 → 边做边学 CE（世界 A） | 取值 → Bayes-opt（世界 B） | 对照：ETC exact vs smoothed |
+|---|---|---|---|
+| r=θ_H/θ_L | 4: **0.20**；8: 0.87；16: 0.95；32: 0.96；64: 0.96 | 4: 0.27；8: 0.75；16: 0.85；32: 0.86；64: 0.85 | 4: 0.64；8: 0.64；16: 0.90；32: 0.97；64: 0.98 |
+| π₀ | 0.2: 0.91；0.35: 0.95；0.5: 0.96；0.65: 0.94；0.8: 0.86 | 0.2: 0.61；0.35: 0.76；0.5: 0.86；0.65: 0.92；0.8: 0.92 | 0.2: 0.95；…；0.8: 0.83 |
+| v₁/v₂ | 1.25: 0.92；1.5: 0.94；2: 0.94；3: 0.92；4: 0.90 | 1.25: 0.76 → 4: 0.85 | 0.87 → 0.93 |
+| K（匹配子集 θ_H=8, π₀∈{.35,.5,.65}） | 50: 0.93；100: 0.97；200: 0.98 | 50: 0.88；100: 0.88；200: 0.87 | 50: 0.84；100: 0.95；200: 0.99 |
+
+![一致率热力图](results/fig_sweep_agreement_heatmap.png)
+
+![按 r 的偏移曲线](results/fig_sweep_shift_by_r.png)
+
+![切换点](results/fig_sweep_switch_points.png)
+
+**总结"在哪些参数上一致"：**
+
+* **一致**：r≥8（r≥16 时几乎完全一致），π₀∈[0.2, 0.65]，任意 v₁/v₂∈[1.25, 4]，任意 K（按 B/K 缩放），
+  在 ETC 的"更偏斜"和"更平衡"两个区间内。切换点（偏斜→平衡）的位置也基本重合（上图橙点贴着对角线；
+  例如 r=16, π₀=½：T/K=1.85 vs 1.93；r=64, π₀=½：3.16 vs 3.17）。
+* **较弱**：π₀=0.8（86%）。π₀ 高时 ETC 的进入是连续的（没有跳跃），"更偏斜"区间很窄，切换点对协议更敏感。
+* **不一致**：(i) r=4——固定探测出价 b^I=1 太低，ETC 的学习溢价只是低预算处的一个窄峰，形状与 bandit 完全不同
+  （此时连论文自己的 exact 与 smoothed 模型也只有 64% 一致）；(ii) 尾部 R3——ETC 的溢价因探测成本在大预算下归零，
+  被动学习者没有这个成本；(iii) 切换点附近的窄带。
+* **世界 B（ex-ante 会计）**：方向一致率 82%，但切换点系统性地更晚（上图绿点在对角线上方），
+  π₀ 低时尤其明显（π₀=0.2：61%）。这说明**会计方式对结论的影响比学习协议更大**。
 
 ---
 
@@ -198,21 +307,41 @@ senior 预算的偏移 a^X − a^E（正 = 更偏斜）：
    重新瞄准剩余预算，而不是事先承诺在某些状态超支），并承认在 ex-ante 会计下下边界会消失。
 4. **远尾部（T=3000 那张 slide，"More skewed: Both teams learn"）要降级**：它来自 ETC 探测出价 *b^I*
    在高预算下的成本，边做边学的 agent 要到更大的 T 才出现（世界 A）或根本不出现（世界 B）；
-   连论文自己的 exact 和 smoothed 模型在尾部的切换点都不一致（约 1650 vs 2080）。
+   连论文自己的 exact 和 smoothed 模型在尾部的切换点都不一致（再集中分别从约 1670 和 2190 开始）。
    Takeaway 3 建议改成"方向由 *V′/W′* 在两个预算之间是升还是降决定"，不要强调尾部例子。
 
 ### 5.2 回复 reviewer 的英文段落（草稿，数字来自本目录的实验）
 
 > *Why separate learning from exploitation instead of using a bandit?* We agree that a policy that learns while it
 > exploits weakly dominates our learn-then-exploit protocol in value. Our allocation results, however, do not hinge
-> on this separation. Theorem 1 is protocol-free: for any learning technology with value function *V_X*, learning
-> moves the optimal split toward the senior team if and only if *V_X′(a^E)/W′(a^E) > V_X′(T−a^E)/W′(T−a^E)*.
+> on this separation. Theorem 1 is protocol-free: for any learning technology with value function *V_X*, the local
+> direction in which learning moves the optimal split is the sign of *V_X′(a^E)/W′(a^E) − V_X′(T−a^E)/W′(T−a^E)*,
+> and under the theorem's concavity condition this sign gives the direction of the optimal reallocation.
 > The learning protocol matters only through the shape of this marginal-value ratio, and the role of the
 > learn-then-exploit structure is to characterize that shape in closed form. To verify that the shape—and hence the
 > direction of reallocation—survives when agents learn and exploit simultaneously, we re-solve the model holding the
 > market and the no-learning benchmark fixed, with (i) a Bayesian agent that updates after every auction and re-paces
 > its remaining budget, (ii) the Bayes-optimal adaptive policy computed by dynamic programming over (periods remaining,
-> posterior), and (iii) Thompson sampling. {{REBUTTAL_NUMBERS}}
+> posterior), and (iii) Thompson sampling. Under our budget accounting, the learn-while-exploiting agent reproduces
+> the lower edge of the learning window (its premium turns positive at B≈60 versus 56–59 under ETC), the upward jump
+> of V′/W′ at entry and its subsequent decline, and hence both allocation regimes: at the baseline calibration
+> learning makes the split more skewed for T∈[87,193) and more balanced for T∈[193,2880), compared with [84,185) and
+> [185,1940) under ETC. Against a no-learning benchmark that also re-paces on its realized budget, the sign of the
+> reallocation coincides with our ETC result for 95% of total budgets up to T=2000 and switches at the same total
+> (T≈185). Across 25 market configurations (θ_H/θ_L from 4 to 64, prior from 0.2 to 0.8) and five value ratios,
+> the sign coincides for 92% of total budgets within the two regimes emphasized in the paper—as often as our exact
+> and smoothed ETC models agree with each other (91%)—and for 95–96% when θ_H/θ_L≥16; results are unchanged across
+> horizons K∈{50,100,200}. Disagreements concentrate in narrow bands around regime switches, in the far tail of
+> very large budgets (where reallocation is worth about 0.01 weighted impressions or less), and in markets whose states are
+> poorly separated (θ_H/θ_L=4), where the fixed probing bid √(θ_Lθ_H) makes dedicated probing expensive relative to
+> passive learning. Letting the planner choose the probing bid as well as the probing length—which preserves the
+> learn-then-exploit structure and the sufficiency of the win count—brings the ETC learning premium within 0.06
+> impressions of the learn-while-exploiting agent at every budget above 200. Finally, the lower edge of the learning
+> window is not specific to our protocol: when an agent paces its remaining budget under its current belief, even
+> free information lowers expected impressions at small budgets, because the uninformed agent implicitly
+> cross-subsidizes spending across market states.
+
+（数字都可以在本目录复现。英文段落是草稿，措辞请按论文最终版本调整；"25 market configurations"指 K=100 全因子。）
 
 ---
 
@@ -275,14 +404,24 @@ cd bandit_check
 ../.venv/bin/python run_baseline.py        # 基准参数下的全部 agent（~6 min）
 ../.venv/bin/python run_vpi.py             # 免费信息的价值（两种会计）
 ../.venv/bin/python check_worldB_exact.py  # 世界 B 的参数化精确分配校验
-../.venv/bin/python run_sweep.py           # 43 个市场配置 × 5 个价值比（~1 h）
+../.venv/bin/python run_pacer_benchmark.py # 换成"按钱包 pacing 的不学习基准"（~2 min）
+../.venv/bin/python run_optbid.py          # 规划者同时选择探测出价的 ETC（~5 min，需先跑 run_sweep 的缓存）
+../.venv/bin/python run_sweep.py           # 37 个市场配置 × 5 个价值比（约 1 小时，结果缓存在 results/cache）
 ../.venv/bin/python summarize_sweep.py     # 汇总表与图
 ```
 
 | 文件 | 内容 |
 |---|---|
-| `core.py` | 论文模型：pacing、W、exact ETC、smoothed ETC、自适应停止 ETC |
+| `core.py` | 论文模型：pacing、W、exact ETC、smoothed ETC、自适应停止 ETC、规划者选择探测出价的 ETC |
 | `bandits.py` | 世界 A 的边做边学 CE（网格 DP）；世界 B 的 Bayes-optimal / myopic / Thompson / ETC（拉格朗日 DP） |
 | `agents.py` | 在统一预算网格上计算所有 agent 的 V(B) |
 | `allocation.py`, `analysis.py` | 两团队分配、边际价值比、符号一致率 |
-| `results/` | 图、`baseline_summary.json`、`sweep_agreement.csv`、`sweep_summary.txt` |
+| `results/baseline_*` | 基准参数：日志、shift、`baseline_summary.json`（溢价、边界、再分配价值） |
+| `results/sweep_summary.txt`, `results/sweep_regime_agreement.csv` | 扫描结果：按区间、按参数的一致率；每个配置 × 价值比 × agent × 区间一行 |
+| `results/*.png` | 本文所有图 |
+
+**局限。** (1) 世界 A 里的边做边学 agent 是 certainty-equivalent（每期按当前后验做最优开环 pacing），
+不是在论文会计下"完全前瞻"的最优策略——在论文会计下每个历史都重新承诺，会把它变成近似硬预算问题，
+与 W 不可比；世界 B 中 myopic 与 Bayes-optimal 几乎相同，说明这个近似损失很小。(2) 没有做"硬预算"（逐路径不超支）
+的版本：硬预算下"不学习"的基准本身就会根据花费速度调整，等于隐性学习，没有一个干净的对照；3.4 节的 pacer 基准是最接近的替代。
+(3) 只有两个市场状态和两个团队；论文结论部分提到的多团队、同一市场内共享信息的情形没有测试。

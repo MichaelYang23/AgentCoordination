@@ -1,0 +1,27 @@
+premium of Bayesian updating over a wallet-pacing benchmark:
+  B=   20  pacer-W=-0.537  CE-pacer=-1.211  (CE-W=-1.748)
+  B=   40  pacer-W=-0.477  CE-pacer=-0.298  (CE-W=-0.775)
+  B=   60  pacer-W=-0.431  CE-pacer=+0.421  (CE-W=-0.010)
+  B=  100  pacer-W=-0.365  CE-pacer=+1.362  (CE-W=+0.998)
+  B=  150  pacer-W=-0.307  CE-pacer=+1.984  (CE-W=+1.677)
+  B=  250  pacer-W=-0.232  CE-pacer=+2.431  (CE-W=+2.200)
+  B=  400  pacer-W=-0.169  CE-pacer=+2.445  (CE-W=+2.276)
+  B= 1000  pacer-W=-0.091  CE-pacer=+1.673  (CE-W=+1.581)
+  B= 2000  pacer-W=-0.050  CE-pacer=+0.918  (CE-W=+0.868)
+Bayesian updating pays (vs pacer) from B = 47.7
+
+shift (learning vs pacer benchmark) vs paper ETC shift (vs W):
+  T=   60  Bayes-on-pacer  +0.000   ETC  +0.000
+  T=   84  Bayes-on-pacer  +2.884   ETC  +3.928
+  T=  100  Bayes-on-pacer  +3.398   ETC  +4.345
+  T=  150  Bayes-on-pacer  +4.449   ETC  +4.857
+  T=  185  Bayes-on-pacer  -1.255   ETC  -3.409
+  T=  200  Bayes-on-pacer  -1.706   ETC  -3.976
+  T=  250  Bayes-on-pacer  -3.237   ETC  -5.726
+  T=  300  Bayes-on-pacer  -4.757   ETC  -7.195
+  T=  400  Bayes-on-pacer  -7.506   ETC  -9.475
+  T=  600  Bayes-on-pacer -11.502   ETC -12.502
+  T= 1000  Bayes-on-pacer -13.265   ETC -13.421
+  T= 1500  Bayes-on-pacer -12.993   ETC  -8.712
+  T= 1900  Bayes-on-pacer -10.545   ETC  -2.700
+sign agreement over T in [20, 1990): 0.951, opposite 0.016

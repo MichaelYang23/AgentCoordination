@@ -2,3 +2,4 @@
 __pycache__/
 *.pyc
 bandit_check/results/cache/
+bandit_check/results/optbid_curves.npz
