@@ -441,6 +441,7 @@ cd bandit_check
 ../.venv/bin/python run_optbid.py          # 规划者同时选择探测出价的 ETC（~5 min，需先跑 run_sweep 的缓存）
 ../.venv/bin/python run_sweep.py           # 37 个市场配置 × 5 个价值比（约 1 小时，结果缓存在 results/cache）
 ../.venv/bin/python summarize_sweep.py     # 汇总表与图
+../.venv/bin/python run_large_K.py         # 命题 1-2 的数值验证：K=50…400 与大 K 极限（~4 min）
 ```
 
 | 文件 | 内容 |
@@ -452,6 +453,8 @@ cd bandit_check
 | `results/baseline_*` | 基准参数：日志、shift、`baseline_summary.json`（溢价、边界、再分配价值） |
 | `results/sweep_summary.txt`, `results/sweep_regime_agreement.csv` | 扫描结果：按区间、按参数的一致率；每个配置 × 价值比 × agent × 区间一行 |
 | `results/*.png` | 本文所有图 |
+| `limit_theory.py`, `run_large_K.py` | 大 K 极限对象（VPI、Ψ、凹包络 Φ、信念曲率）与 K=400 验证 |
+| `results/large_K/` | 验证结果：`summary.txt`（所有阈值、收敛表、学习成本、τ*、分配切换点）与收敛图；命题与证明见 [`../theory/large_horizon_limit.pdf`](../theory/large_horizon_limit.pdf) |
 
 **局限。** (1) 世界 A 里的边做边学 agent 是 certainty-equivalent（每期按当前后验做最优开环 pacing），
 不是在论文会计下"完全前瞻"的最优策略——在论文会计下每个历史都重新承诺，会把它变成近似硬预算问题，

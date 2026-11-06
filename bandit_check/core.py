@@ -144,6 +144,49 @@ def etc_exact_tau_values(B, thL, thH, pi0, K):
 
 
 @njit(cache=True, parallel=True)
+def etc_exact_curve_capped(Bs, thL, thH, pi0, K, tau_cap):
+    """Exact ETC with tau restricted to <= tau_cap (for large K; tau* = O(log K))."""
+    bI = math.sqrt(thL * thH)
+    r = thH / thL
+    sr = math.sqrt(r)
+    pL = sr / (1.0 + sr)
+    pH = 1.0 / (1.0 + sr)
+    lk0 = math.log(pi0 / (1.0 - pi0))
+    lr = math.log(r)
+    V = np.empty(Bs.size)
+    T = np.empty(Bs.size)
+    for i in prange(Bs.size):
+        B = Bs[i]
+        best = K * g_rate(pi0, B / K, thL, thH)
+        bt = 0
+        tmax = int(math.floor(B / bI + 1e-12))
+        if tmax > K - 1:
+            tmax = K - 1
+        if tmax > tau_cap:
+            tmax = tau_cap
+        for tau in range(1, tmax + 1):
+            tot = 0.0
+            for w in range(tau + 1):
+                lc = math.lgamma(tau + 1.0) - math.lgamma(w + 1.0) - math.lgamma(tau - w + 1.0)
+                PwL = math.exp(lc + w * math.log(pL) + (tau - w) * math.log(1.0 - pL))
+                PwH = math.exp(lc + w * math.log(pH) + (tau - w) * math.log(1.0 - pH))
+                Pw = pi0 * PwH + (1.0 - pi0) * PwL
+                if Pw < 1e-300:
+                    continue
+                pi = sigmoid(lk0 + 0.5 * (tau - 2.0 * w) * lr)
+                rem = B - w * bI
+                if rem < 0.0:
+                    rem = 0.0
+                tot += Pw * (w + (K - tau) * g_rate(pi, rem / (K - tau), thL, thH))
+            if tot > best:
+                best = tot
+                bt = tau
+        V[i] = best
+        T[i] = bt
+    return V, T
+
+
+@njit(cache=True, parallel=True)
 def etc_exact_curve(Bs, thL, thH, pi0, K):
     V = np.empty(Bs.size)
     tau = np.empty(Bs.size)

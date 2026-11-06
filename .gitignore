@@ -3,3 +3,9 @@ __pycache__/
 *.pyc
 bandit_check/results/cache/
 bandit_check/results/optbid_curves.npz
+bandit_check/results/large_K/curves_K*.npz
+theory/*.aux
+theory/*.log
+theory/*.out
+theory/*.toc
+theory/*.synctex.gz
