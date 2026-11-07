@@ -343,6 +343,41 @@ exact ETC 与 smoothed ETC 之间的一致率（91%）一样高——也就是�
 * **世界 B（ex-ante 会计）**：方向一致率 82%，但切换点系统性地更晚（上图绿点在对角线上方），
   π₀ 低时尤其明显（π₀=0.2：61%）。这说明**会计方式对结论的影响比学习协议更大**。
 
+
+### 4.3 full bandit（DP）与 decomposition：在哪些参数上相近、哪些不一致
+
+这里只比较两样东西：
+- **full bandit**：用动态规划求出的最优策略，每期既学习又执行（ex-ante 预算规则）。
+- **decomposition**：先用固定出价 b^I 探测 τ 期，再根据赢的次数 w 定一个出价执行到底。分两个版本：在与 DP 相同的
+  预算规则下重新求解（只剩"结构"本身的差别），以及论文中的版本（论文的预算规则）。
+
+两个指标（`region_map.py`，只用扫描缓存，不重跑仿真）：
+1. **学习价值之比**：decomposition 的 V−W ÷ full bandit 的 V−W，横轴是每期预算 ρ=B/K。
+2. **分配偏斜**：两者给 senior 的预算调整 a−a^E 是否同向、大小是否在 2 倍以内，横轴是每期总预算 t=T/K。
+
+![full bandit 与 decomposition 的一致区域](results/fig_region_map.png)
+
+| r（学会状态所需探测占 K 的比例） | 学习价值 ≥80% 的 ρ 区间（同规则） | 偏斜同向（其中大小相近） |
+|---|---|---|
+| 4（78%） | 无 | 0%（0%） |
+| 8（36%） | 0.64–0.85 | 74%（31%） |
+| 16（21%） | 0.77–2.06 | 84%（70%） |
+| 32（14%） | 0.94–7.36 | 87%（74%） |
+| 64（10%） | 1.15–12（网格上限） | 89%（78%） |
+
+（π₀=½，K=100，偏斜取 v₁/v₂=2。）
+
+* **相近**：r≥16 且预算适中。
+* **不一致**：(i) r=4 几乎处处、r=8 大部分；(ii) 低预算：full bandit 能顺便学一点，decomposition 不值得专门探测；
+  (iii) 高预算（r=8 时 ρ>5.5，r=16 时 ρ>10）：decomposition 停止学习，full bandit 还在学；(iv) 两个切换点之间：
+  两者都是先"更偏斜"后"更平衡"，但 full bandit 切换得更晚（t：r=8 为 2.39 对 1.13，r=16 为 3.05 对 1.60，
+  r=32 为 4.09 对 2.39，r=64 为 5.71 对 4.08），中间这一段方向相反。
+* **K 越大越接近**（r=16，ρ=5：K=50/100/200 时比值 0.49/0.65/0.77；ρ=10：0.31/0.51/0.67）。π₀ 和 v₁/v₂
+  影响较小（π₀=0.2 时偏斜同向率较低：54%，其余 66–72%）。
+* 与论文规则下的 decomposition 相比，同规则版本的偏斜大小更接近（2 倍以内：54% 对 39%），反向更少（8% 对 14%）。
+
+完整数字见 `results/region_map_summary.txt`。
+
 ---
 
 ## 5. 建议如何写进论文 / rebuttal
@@ -462,6 +497,7 @@ cd bandit_check
 ../.venv/bin/python summarize_sweep.py     # 汇总表与图
 ../.venv/bin/python run_large_K.py         # 命题 1-2 的数值验证：K=50…400 与大 K 极限（~4 min）
 ../.venv/bin/python fig_explain_agents.py  # 解释图：ETC 与 CE 的一次投放；方向一致率汇总图
+../.venv/bin/python region_map.py          # full bandit（DP）与 decomposition 的一致区域（需扫描缓存，~10 s）
 ```
 
 | 文件 | 内容 |
@@ -473,6 +509,7 @@ cd bandit_check
 | `results/baseline_*` | 基准参数：日志、shift、`baseline_summary.json`（溢价、边界、再分配价值） |
 | `results/sweep_summary.txt`, `results/sweep_regime_agreement.csv` | 扫描结果：按区间、按参数的一致率；每个配置 × 价值比 × agent × 区间一行 |
 | `results/*.png` | 本文所有图 |
+| `region_map.py` | full bandit（DP）与 decomposition 的一致区域图和汇总（`results/fig_region_map.png`、`results/region_map_summary.txt`） |
 | `fig_explain_agents.py` | 解释图：ETC 与 CE 怎么出价、怎么学习（`results/fig_agents_explained.png`）；方向一致率汇总（`results/fig_agreement_summary.png`）；ETC 与 full bandit 的价值和偏斜对比（`results/fig_etc_vs_full_bandit.png`，需要 run_baseline 的缓存） |
 | `limit_theory.py`, `run_large_K.py` | 大 K 极限对象（VPI、Ψ、凹包络 Φ、信念曲率）与 K=400 验证 |
 | `results/large_K/` | 验证结果：`summary.txt`（所有阈值、收敛表、学习成本、τ*、分配切换点）与收敛图；命题与证明见 [`../theory/large_horizon_limit.pdf`](../theory/large_horizon_limit.pdf) |
