@@ -23,6 +23,13 @@
 | **r = θ_H/θ_L** | 难市场与容易市场的竞争强度之比；r 越大，两个状态越容易区分。 |
 | **R0–R3** | 按论文 ETC 自己的结果给总预算 T 分段：R0 谁都不学；R1 ETC 更偏斜；R2 ETC 更平衡；R3 尾部。 |
 
+![ETC 与 CE 在一次投放中的行为](results/fig_agents_explained.png)
+
+*一次模拟投放（基准参数，K=100，B=150；两种 agent 用同一组随机拍卖结果）。蓝线 ETC：前 10 期由探测 agent
+用固定出价 b^I=2 纯学习，之后执行 agent 用一个固定出价执行到底，不再更新信念。橙线 CE：每次拍卖后更新信念，
+并按剩余钱包重新 pacing（所以最后几期钱没花完时出价会升高）。灰色虚线 W：按先验出价，从不学习。
+下排信念用对数几率刻度，这样才看得出 ETC 交接后信念被冻结，而 CE 一直在学。*
+
 ---
 
 ## 0. 结论速览
@@ -297,6 +304,11 @@ R0 = 谁都不学（低 T）；R1 = ETC "更偏斜"；R2 = ETC "更平衡"；R3 
 exact ETC 与 smoothed ETC 之间的一致率（91%）一样高——也就是说，"换成 bandit"带来的差异不比"换一种 ETC 近似"更大。
 反号只有 4%，而且集中在切换点附近。尾部是唯一系统性不一致的地方。
 
+![一致率汇总](results/fig_agreement_summary.png)
+
+*左：论文两个区间内，各种学习方式与 ETC（slides 的 smoothed 版本）的方向一致率。右：按 r 分组；括号里是
+把后验误差压到 1/K 需要的探测期数占期限的比例 log K / (K·log(1/β))（命题 1 中的 τ_K/K），r 越大越小。*
+
 ### 4.2 哪些参数上一致（R1+R2 一致率，K=100）
 
 | 参数 | 取值 → 边做边学 CE（世界 A） | 取值 → Bayes-opt（世界 B） | 对照：ETC exact vs smoothed |
@@ -442,6 +454,7 @@ cd bandit_check
 ../.venv/bin/python run_sweep.py           # 37 个市场配置 × 5 个价值比（约 1 小时，结果缓存在 results/cache）
 ../.venv/bin/python summarize_sweep.py     # 汇总表与图
 ../.venv/bin/python run_large_K.py         # 命题 1-2 的数值验证：K=50…400 与大 K 极限（~4 min）
+../.venv/bin/python fig_explain_agents.py  # 解释图：ETC 与 CE 的一次投放；方向一致率汇总图
 ```
 
 | 文件 | 内容 |
@@ -453,6 +466,7 @@ cd bandit_check
 | `results/baseline_*` | 基准参数：日志、shift、`baseline_summary.json`（溢价、边界、再分配价值） |
 | `results/sweep_summary.txt`, `results/sweep_regime_agreement.csv` | 扫描结果：按区间、按参数的一致率；每个配置 × 价值比 × agent × 区间一行 |
 | `results/*.png` | 本文所有图 |
+| `fig_explain_agents.py` | 解释图：ETC 与 CE 怎么出价、怎么学习（`results/fig_agents_explained.png`）；方向一致率汇总（`results/fig_agreement_summary.png`） |
 | `limit_theory.py`, `run_large_K.py` | 大 K 极限对象（VPI、Ψ、凹包络 Φ、信念曲率）与 K=400 验证 |
 | `results/large_K/` | 验证结果：`summary.txt`（所有阈值、收敛表、学习成本、τ*、分配切换点）与收敛图；命题与证明见 [`../theory/large_horizon_limit.pdf`](../theory/large_horizon_limit.pdf) |
 
