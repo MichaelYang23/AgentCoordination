@@ -152,6 +152,13 @@ W 在 t=0 承诺一次；ETC 承诺两次（t=0 与交接时）。这个会计�
 
 ## 3. 基准参数结果（θ_L=½, θ_H=8, K=100, π₀=½, v₁/v₂=2）
 
+![ETC 与 full bandit](results/fig_etc_vs_full_bandit.png)
+
+*用"full bandit"（每期既学习又执行）的说法重画的总览。左：总价值 V(B)，所有曲线几乎重合（学习只贡献总价值的
+0.1–4.4%），所以"总价值趋势相似"说明不了问题。中：学习带来的价值 V−W，形状相同，bandit 始终在 ETC 之上，
+差距随预算变大。右：分配偏斜的变化；尾部（T>1940）ETC 停止学习，与 bandit 方向相反。带 * 的两种 bandit
+在 ex-ante 预算规则下计算。*
+
 ### 3.1 单团队：学习溢价与边际价值比
 
 ![学习溢价](results/fig_baseline_premium.png)
@@ -466,7 +473,7 @@ cd bandit_check
 | `results/baseline_*` | 基准参数：日志、shift、`baseline_summary.json`（溢价、边界、再分配价值） |
 | `results/sweep_summary.txt`, `results/sweep_regime_agreement.csv` | 扫描结果：按区间、按参数的一致率；每个配置 × 价值比 × agent × 区间一行 |
 | `results/*.png` | 本文所有图 |
-| `fig_explain_agents.py` | 解释图：ETC 与 CE 怎么出价、怎么学习（`results/fig_agents_explained.png`）；方向一致率汇总（`results/fig_agreement_summary.png`） |
+| `fig_explain_agents.py` | 解释图：ETC 与 CE 怎么出价、怎么学习（`results/fig_agents_explained.png`）；方向一致率汇总（`results/fig_agreement_summary.png`）；ETC 与 full bandit 的价值和偏斜对比（`results/fig_etc_vs_full_bandit.png`，需要 run_baseline 的缓存） |
 | `limit_theory.py`, `run_large_K.py` | 大 K 极限对象（VPI、Ψ、凹包络 Φ、信念曲率）与 K=400 验证 |
 | `results/large_K/` | 验证结果：`summary.txt`（所有阈值、收敛表、学习成本、τ*、分配切换点）与收敛图；命题与证明见 [`../theory/large_horizon_limit.pdf`](../theory/large_horizon_limit.pdf) |
 

@@ -4,6 +4,8 @@
    simulated campaign (same random auction draws for both), against the no-learning benchmark W.
 2. fig_agreement_summary.png: how often learning moves the planner's split in the same direction under
    each design (K = 100 factorial sweep, inside the paper's two regimes R1+R2), overall and by r.
+3. fig_etc_vs_full_bandit.png: the decomposed ETC against 'full bandit' policies at the baseline: total value,
+   value of learning, and the skewness of the planner's split.
 """
 import csv
 import math
@@ -206,6 +208,67 @@ def figure_agreement():
     print("->", path)
 
 
+def figure_full_bandit():
+    """ETC vs 'full bandit' policies (learn and execute in every auction) at the baseline, K = 100.
+
+    Needs the run_baseline.py cache (value curves) and results/baseline_shifts.npz (allocation shifts).
+    """
+    c = np.load(os.path.join(RES, "cache", "v2_thL0.5_thH8_pi0.5_K100_B4000_h0.1_hb0.1_hlB0.02.npz"))
+    S = np.load(os.path.join(RES, "baseline_shifts.npz"))
+    g, W = c["grid"], c["W"]
+    series = [  # key, label, colour, line style
+        ("opt_B", "Full bandit: best possible (Bayes-optimal)*", ps.COLORS["opt_B"], "-"),
+        ("ts_B", "Full bandit: Thompson sampling*", ps.COLORS["ts_B"], "-"),
+        ("ce_A", "Full bandit: update + re-pace every auction (CE)", ps.COLORS["ce_A"], "-"),
+        ("etc_smooth", "Decomposed ETC (paper): learn τ periods, then execute", ps.COLORS["etc_smooth"], "-"),
+    ]
+    ps.setup()
+    fig, axes = plt.subplots(1, 3, figsize=(15.5, 4.6))
+    m = (g >= 10) & (g <= 4000)
+    ax = axes[0]
+    ax.plot(g[m], W[m], color=GRAY, lw=1.5, ls=(0, (4, 2.5)), label="No learning (W)")
+    for key, lab, col, ls in series:
+        ax.plot(g[m], c[key][m], color=col, lw=1.6, ls=ls, label=lab)
+    ax.set_xscale("log")
+    ax.set_title("Total value V(B): the curves overlap", loc="left")
+    ax.set_xlabel("Team budget B (log scale)")
+    ax.set_ylabel("Expected impressions won (K = 100)")
+    ax.text(0.97, 0.05, "learning adds only 0.1–4.4%\nof total value", transform=ax.transAxes, ha="right",
+            va="bottom", fontsize=8.5, color=ps.INK2)
+    ax = axes[1]
+    for key, lab, col, ls in series:
+        ax.plot(g[m], (c[key] - W)[m], color=col, lw=2.0, ls=ls)
+    ps.zero_line(ax)
+    ax.set_xscale("log")
+    ax.set_title("Value of learning V(B) − W(B)", loc="left")
+    ax.set_xlabel("Team budget B (log scale)")
+    ax.set_ylabel("Extra impressions from learning")
+    ax = axes[2]
+    T = S["T"]
+    tail = 1940.0
+    ax.axvspan(tail, T.max(), color=GRAY, alpha=0.10, lw=0)
+    ax.text(tail * 0.97, 0.97, "tail (ETC stops learning) →", transform=ax.get_xaxis_transform(),
+            ha="right", va="top", fontsize=8, color=ps.INK2)
+    for key, lab, col, ls in series:
+        ax.plot(T, S[key], color=col, lw=1.6, ls=ls)   # stored as the shift a^X - a^E
+    ps.zero_line(ax)
+    ax.set_xscale("log")
+    ax.set_xlim(T.min(), T.max())
+    ax.set_title("Skewness: senior budget with vs. without learning", loc="left")
+    ax.set_xlabel("Total budget T (log scale, v1/v2 = 2)")
+    ax.set_ylabel("a − a^E   (> 0: more skewed)")
+    handles, labels = axes[0].get_legend_handles_labels()
+    fig.legend(handles, labels, loc="upper center", ncol=3, bbox_to_anchor=(0.5, 1.0), fontsize=9)
+    fig.text(0.5, 0.005, "Baseline θ_L = 0.5, θ_H = 8, π0 = 0.5, K = 100.   * computed under the ex-ante budget rule "
+             "(expected total spend ≤ B); the others under the paper's rule. The planner may switch learning off "
+             "(value never below W).", ha="center", va="bottom", fontsize=8, color=ps.MUTED)
+    fig.tight_layout(rect=(0, 0.04, 1, 0.86))
+    path = os.path.join(RES, "fig_etc_vs_full_bandit.png")
+    fig.savefig(path, dpi=170)
+    print("->", path)
+
+
 if __name__ == "__main__":
     figure_agents()
     figure_agreement()
+    figure_full_bandit()
