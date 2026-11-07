@@ -133,3 +133,33 @@ def min_belief_curvature(rhos, thL, thH, npi):
 def first_positive(x, y, tol=1e-12):
     idx = np.where(y > tol)[0]
     return float(x[idx[0]]) if idx.size else float("nan")
+
+
+def exante_full_info(rhos, thL, thH, pi0, iters=120):
+    """Per-period value when the state is known from the start under the ex-ante budget rule.
+
+    The state-contingent spends (s_H, s_L) with pi0 s_H + (1 - pi0) s_L = rho maximise
+    pi0 g(1; s_H) + (1 - pi0) g(0; s_L). With multiplier lam the bid in state theta maximises
+    q_theta(b)(1 - lam b), i.e. b = -theta + sqrt(theta^2 + theta / lam); lam is found by bisection.
+    This is the large-K limit of both the full bandit (DP) and the decomposition under the ex-ante rule.
+    """
+    rhos = np.asarray(rhos, float)
+    lo = np.full(rhos.shape, 1e-12)
+    hi = np.full(rhos.shape, 1e6)
+
+    def at(lam):
+        val, spend = 0.0, 0.0
+        for th, p in ((thH, pi0), (thL, 1.0 - pi0)):
+            b = -th + np.sqrt(th * th + th / lam)
+            q = b / (b + th)
+            val = val + p * q
+            spend = spend + p * b * q
+        return val, spend
+
+    for _ in range(iters):
+        lam = np.sqrt(lo * hi)
+        _, s = at(lam)
+        hi = np.where(s > rhos, hi, lam)
+        lo = np.where(s > rhos, lam, lo)
+    v, _ = at(np.sqrt(lo * hi))
+    return np.where(rhos > 0, v, 0.0)

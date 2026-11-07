@@ -342,47 +342,266 @@
   }
  },
  "K": {
-  "r8_K50": [
-   0.654,
-   0.246,
-   0.078,
-   0.0
-  ],
-  "r8_K100": [
-   0.769,
-   0.442,
-   0.249,
-   0.081
-  ],
-  "r16_K50": [
-   0.825,
-   0.656,
-   0.489,
-   0.313
-  ],
-  "r16_K100": [
-   0.885,
-   0.774,
-   0.65,
-   0.51
-  ],
-  "r16_K200": [
-   0.928,
-   0.86,
-   0.775,
-   0.673
-  ],
-  "r32_K50": [
-   0.754,
-   0.84,
-   0.747,
-   0.645
-  ],
-  "r32_K100": [
-   0.845,
-   0.901,
-   0.837,
-   0.767
-  ]
+  "r8_K50_same": {
+   "ratio_at_rho_1_2.5_5_10": [
+    0.654,
+    0.246,
+    0.078,
+    0.0
+   ],
+   "close_rho": [],
+   "skew_same": 0.277,
+   "skew_similar": 0.091,
+   "skew_opposite": 0.213,
+   "switch_dec": 1.16,
+   "switch_full_bandit": 2.43
+  },
+  "r8_K50_paper": {
+   "ratio_at_rho_1_2.5_5_10": [
+    0.801,
+    0.325,
+    0.007,
+    0.0
+   ],
+   "close_rho": [
+    [
+     0.94,
+     0.94
+    ]
+   ],
+   "skew_same": 0.334,
+   "skew_similar": 0.122,
+   "skew_opposite": 0.476,
+   "switch_dec": 1.6,
+   "switch_full_bandit": 2.43
+  },
+  "r8_K100_same": {
+   "ratio_at_rho_1_2.5_5_10": [
+    0.769,
+    0.442,
+    0.249,
+    0.081
+   ],
+   "close_rho": [
+    [
+     0.64,
+     0.85
+    ]
+   ],
+   "skew_same": 0.738,
+   "skew_similar": 0.313,
+   "skew_opposite": 0.034,
+   "switch_dec": 1.13,
+   "switch_full_bandit": 2.39
+  },
+  "r8_K100_paper": {
+   "ratio_at_rho_1_2.5_5_10": [
+    0.882,
+    0.525,
+    0.175,
+    0.0
+   ],
+   "close_rho": [
+    [
+     0.77,
+     1.39
+    ]
+   ],
+   "skew_same": 0.586,
+   "skew_similar": 0.257,
+   "skew_opposite": 0.216,
+   "switch_dec": 1.45,
+   "switch_full_bandit": 2.39
+  },
+  "r16_K50_same": {
+   "ratio_at_rho_1_2.5_5_10": [
+    0.825,
+    0.656,
+    0.489,
+    0.313
+   ],
+   "close_rho": [
+    [
+     0.94,
+     1.39
+    ]
+   ],
+   "skew_same": 0.837,
+   "skew_similar": 0.674,
+   "skew_opposite": 0.063,
+   "switch_dec": 1.6,
+   "switch_full_bandit": 3.05
+  },
+  "r16_K50_paper": {
+   "ratio_at_rho_1_2.5_5_10": [
+    0.766,
+    0.762,
+    0.455,
+    0.151
+   ],
+   "close_rho": [
+    [
+     1.04,
+     2.06
+    ]
+   ],
+   "skew_same": 0.85,
+   "skew_similar": 0.493,
+   "skew_opposite": 0.027,
+   "switch_dec": 2.02,
+   "switch_full_bandit": 3.05
+  },
+  "r16_K100_same": {
+   "ratio_at_rho_1_2.5_5_10": [
+    0.885,
+    0.774,
+    0.65,
+    0.51
+   ],
+   "close_rho": [
+    [
+     0.77,
+     2.06
+    ]
+   ],
+   "skew_same": 0.837,
+   "skew_similar": 0.704,
+   "skew_opposite": 0.074,
+   "switch_dec": 1.6,
+   "switch_full_bandit": 3.05
+  },
+  "r16_K100_paper": {
+   "ratio_at_rho_1_2.5_5_10": [
+    0.841,
+    0.834,
+    0.573,
+    0.295
+   ],
+   "close_rho": [
+    [
+     0.94,
+     2.51
+    ]
+   ],
+   "skew_same": 0.844,
+   "skew_similar": 0.487,
+   "skew_opposite": 0.052,
+   "switch_dec": 1.85,
+   "switch_full_bandit": 3.05
+  },
+  "r16_K200_same": {
+   "ratio_at_rho_1_2.5_5_10": [
+    0.928,
+    0.86,
+    0.775,
+    0.673
+   ],
+   "close_rho": [
+    [
+     0.64,
+     4.09
+    ]
+   ],
+   "skew_same": 0.859,
+   "skew_similar": 0.746,
+   "skew_opposite": 0.079,
+   "switch_dec": 1.62,
+   "switch_full_bandit": 3.02
+  },
+  "r16_K200_paper": {
+   "ratio_at_rho_1_2.5_5_10": [
+    0.883,
+    0.876,
+    0.646,
+    0.394
+   ],
+   "close_rho": [
+    [
+     0.94,
+     3.05
+    ]
+   ],
+   "skew_same": 0.842,
+   "skew_similar": 0.488,
+   "skew_opposite": 0.07,
+   "switch_dec": 1.72,
+   "switch_full_bandit": 3.02
+  },
+  "r32_K50_same": {
+   "ratio_at_rho_1_2.5_5_10": [
+    0.754,
+    0.84,
+    0.747,
+    0.645
+   ],
+   "close_rho": [
+    [
+     1.15,
+     3.36
+    ]
+   ],
+   "skew_same": 0.854,
+   "skew_similar": 0.718,
+   "skew_opposite": 0.077,
+   "switch_dec": 2.26,
+   "switch_full_bandit": 4.09
+  },
+  "r32_K50_paper": {
+   "ratio_at_rho_1_2.5_5_10": [
+    0.413,
+    0.925,
+    0.723,
+    0.471
+   ],
+   "close_rho": [
+    [
+     1.39,
+     3.71
+    ]
+   ],
+   "skew_same": 0.852,
+   "skew_similar": 0.523,
+   "skew_opposite": 0.056,
+   "switch_dec": 2.62,
+   "switch_full_bandit": 4.09
+  },
+  "r32_K100_same": {
+   "ratio_at_rho_1_2.5_5_10": [
+    0.845,
+    0.901,
+    0.837,
+    0.767
+   ],
+   "close_rho": [
+    [
+     0.94,
+     7.36
+    ]
+   ],
+   "skew_same": 0.871,
+   "skew_similar": 0.742,
+   "skew_opposite": 0.077,
+   "switch_dec": 2.39,
+   "switch_full_bandit": 4.09
+  },
+  "r32_K100_paper": {
+   "ratio_at_rho_1_2.5_5_10": [
+    0.571,
+    0.95,
+    0.773,
+    0.547
+   ],
+   "close_rho": [
+    [
+     1.26,
+     4.51
+    ]
+   ],
+   "skew_same": 0.846,
+   "skew_similar": 0.525,
+   "skew_opposite": 0.076,
+   "switch_dec": 2.41,
+   "switch_full_bandit": 4.09
+  }
  }
 }

@@ -33,7 +33,7 @@ def _coarse_then_interp(fn, grid, step):
 
 
 def compute_curves(thL, thH, pi0, K, Bmax, h=0.1, hb=0.1, hl_A=0.05, hl_B=0.02,
-                   which=None, verbose=True, cache_dir=None, nbg=80, n_fine=700):
+                   which=None, verbose=True, cache_dir=None, nbg=80, n_fine=700, tau_cap_B=None):
     tag = "v2_thL%.3g_thH%.3g_pi%.3g_K%d_B%d_h%.3g_hb%.3g_hlB%.3g" % (thL, thH, pi0, K, Bmax, h, hb, hl_B)
     if cache_dir is not None:
         path = os.path.join(cache_dir, tag + ".npz")
@@ -95,7 +95,7 @@ def compute_curves(thL, thH, pi0, K, Bmax, h=0.1, hb=0.1, hl_A=0.05, hl_B=0.02,
             out[key + "_lam"] = np.interp(grid, np.sort(S), lams[np.argsort(S)])
             log(key + " (%d multipliers)" % lams.size)
     if "etc_B" in which:
-        tau_cap = min(K - 1, 40)
+        tau_cap = min(K - 1, 40 if tau_cap_B is None else tau_cap_B)
         lams = lam_targets(lambda L: etc_exante_sweep(thL, thH, pi0, K, L, 0)[1][:, 0], Bmax, n_fine=n_fine)
         N, S = etc_exante_sweep(thL, thH, pi0, K, lams, tau_cap)
         best = np.full(grid.size, -np.inf)

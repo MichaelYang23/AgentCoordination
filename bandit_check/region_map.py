@@ -37,14 +37,17 @@ VAL_LABELS = ["< 20% of the full bandit's", "20–50%", "learning adds < 0.5% fo
 SKEW_LABELS = ["opposite direction", "only one of them shifts", "neither shifts",
                "same direction, size differs > 2×", "same direction, similar size"]
 NEGLIGIBLE = 0.005            # full bandit's learning value below 0.5% of W: nothing to compare
-RHO = np.geomspace(0.05, 12.0, 57)
+RHO = np.geomspace(0.05, 10.0, 55)   # the decomposition's lambda sweep under-covers the last ~5% of each
+                                     # budget range (rho > ~11 when it ends at 12K), so stop at 10
 T_EDGES = np.geomspace(0.2, 12.0, 49)
 THH = [2, 4, 8, 16, 32]
 
 
 def load_values():
     out = {}
-    for f in glob.glob(os.path.join(CACHE, "v2_thL0.5_thH*_hlB0.04.npz")):
+    files = glob.glob(os.path.join(CACHE, "v2_thL0.5_thH*_hlB0.04.npz"))
+    files += glob.glob(os.path.join(CACHE, "dp_thL0.5_thH*_hlB0.04.npz"))      # run_dp_largeK.py
+    for f in files:
         m = re.search(r"thH(\d+)_pi([\d.]+)_K(\d+)_B", os.path.basename(f))
         thH, pi0, K = int(m.group(1)), float(m.group(2)), int(m.group(3))
         out[(thH, pi0, K)] = dict(np.load(f))
@@ -80,9 +83,27 @@ def skew_point_categories(T, a_dec, a_fb):
     return cat
 
 
+def load_shift(thH, pi0, K, v):
+    for prefix in ("shift", "dpshift"):
+        f = os.path.join(CACHE, "%s_thH%d_pi%s_K%d_v%s.npz" % (prefix, thH, ("%g" % pi0), K, ("%g" % v)))
+        if os.path.exists(f):
+            return np.load(f)
+    return None
+
+
+def switch_point(T, s, K):
+    """First t = T/K at which the shift turns from positive (more skewed) to negative (more balanced)."""
+    tol = 0.1 + 0.001 * T
+    sg = np.where(np.abs(s) < tol, 0, np.sign(s))
+    pos = np.where(sg > 0)[0]
+    if pos.size == 0:
+        return None
+    after = np.where((sg < 0) & (np.arange(sg.size) > pos[0]))[0]
+    return round(float(T[after[0]] / K), 2) if after.size else None
+
+
 def skew_categories(thH, pi0, K, v):
-    f = os.path.join(CACHE, "shift_thH%d_pi%s_K%d_v%s.npz" % (thH, ("%g" % pi0), K, ("%g" % v)))
-    S = np.load(f)
+    S = load_shift(thH, pi0, K, v)
     T = S["T"]
     t = T / K
     res, pts = {}, {}
@@ -178,16 +199,36 @@ def main():
                                                                                  100 * c, 100 * d, 100 * e))
             summary.setdefault("pooled", {}).setdefault(gname, {})[n] = [round(float(x), 3) for x in res[n]]
 
-    # ---------------- horizon K (matched subsets)
-    lines.append("\nHorizon K (pi0 = 0.5, same rule): value-of-learning ratio at rho = 1, 2.5, 5, 10")
-    for thH in (4, 8, 16):
-        for K in (50, 100, 200):
-            if (thH, 0.5, K) not in vals:
+    # ---------------- horizon K: r = 8, 16, 32 at pi0 = 0.5, K = 50 ... 400
+    KS = [50, 100, 200, 400]
+    RS = [4, 8, 16]                        # thH; r = 2 thH
+    kmap = {}
+    lines.append("\nHorizon K (pi0 = 0.5). value: ratio at rho = 1, 2.5, 5, 10 and the rho-range with ratio >= 0.8;"
+                 " skewness at v1/v2 = 2: same direction / similar size / opposite; switch point t (more skewed ->"
+                 " more balanced) of the decomposition vs the full bandit")
+    for thH in RS:
+        for K in KS:
+            if (thH, 0.5, K) not in vals or load_shift(thH, 0.5, K, 2.0) is None:
                 continue
             vc = value_categories(vals[(thH, 0.5, K)], K)
-            rr = [float(np.interp(math.log(x), np.log(RHO), vc["same"][1])) for x in (1.0, 2.5, 5.0, 10.0)]
-            lines.append("  r=%2d K=%3d  ratio %s" % (thH * 2, K, " ".join("%.2f" % x for x in rr)))
-            summary.setdefault("K", {})["r%d_K%d" % (thH * 2, K)] = [round(x, 3) for x in rr]
+            sc, sp = skew_categories(thH, 0.5, K, 2.0)
+            S = load_shift(thH, 0.5, K, 2.0)
+            for n in DEC:
+                rr = [float(np.interp(math.log(x), np.log(RHO), vc[n][1])) for x in (1.0, 2.5, 5.0, 10.0)]
+                close = intervals(RHO, vc[n][0] == 4)
+                same = float(np.isin(sp[n], (3, 4)).mean())
+                sim = float((sp[n] == 4).mean())
+                opp = float((sp[n] == 0).mean())
+                sw_d, sw_f = switch_point(S["T"], S[DEC[n]], K), switch_point(S["T"], S[FB], K)
+                lines.append("  r=%2d K=%3d %-5s ratio %s  close rho %s  skew same %3.0f%% similar %3.0f%% opposite"
+                             " %3.0f%%  switch t: dec %s vs full bandit %s"
+                             % (2 * thH, K, n, " ".join("%.2f" % x for x in rr), close, 100 * same, 100 * sim,
+                                100 * opp, sw_d, sw_f))
+                summary.setdefault("K", {})["r%d_K%d_%s" % (2 * thH, K, n)] = {
+                    "ratio_at_rho_1_2.5_5_10": [round(x, 3) for x in rr], "close_rho": close,
+                    "skew_same": round(same, 3), "skew_similar": round(sim, 3), "skew_opposite": round(opp, 3),
+                    "switch_dec": sw_d, "switch_full_bandit": sw_f}
+            kmap[(thH, K)] = (vc["same"][0], np.where(sc["same"] < 0, np.nan, sc["same"]))
 
     txt = "\n".join(lines)
     print(txt)
@@ -242,6 +283,47 @@ def main():
     fig.tight_layout(rect=(0, 0.03, 1, 0.9), h_pad=6.0)
     fig.savefig(os.path.join(RES, "fig_region_map.png"), dpi=170)
     print("-> results/fig_region_map.png")
+
+    fig, axes = plt.subplots(2, len(RS), figsize=(15, 6.6), sharey=True)
+    for j, thH in enumerate(RS):
+        for row, edges in enumerate((rho_edges, T_EDGES)):
+            ax = axes[row, j]
+            for i, K in enumerate(KS):
+                if (thH, K) not in kmap:
+                    continue
+                data = kmap[(thH, K)][row]
+                for k in range(data.size):
+                    if np.isnan(data[k]):
+                        continue
+                    ax.fill_between([edges[k], edges[k + 1]], i - 0.4, i + 0.4, color=COLS[int(data[k])], lw=0)
+            ax.set_xscale("log")
+            ax.set_xlim(edges[0], edges[-1])
+            ax.set_ylim(-0.6, len(KS) - 0.4)
+            ax.grid(False)
+            ax.set_xticks([0.1, 0.2, 0.5, 1, 2, 5, 10] if row == 0 else [0.2, 0.5, 1, 2, 5, 10])
+            ax.set_xticklabels(["0.1", "0.2", "0.5", "1", "2", "5", "10"] if row == 0 else
+                               ["0.2", "0.5", "1", "2", "5", "10"])
+            ax.minorticks_off()
+            if row == 0:
+                ax.set_title("r = %d" % (2 * thH), loc="left")
+                ax.set_xlabel("Team budget per period ρ = B/K")
+            else:
+                ax.set_xlabel("Total budget per period t = T/K   (v1/v2 = 2)")
+        for row in range(2):
+            axes[row, 0].set_yticks(range(len(KS)))
+            axes[row, 0].set_yticklabels(["K = %d" % K for K in KS])
+    axes[0, 0].set_ylabel("Value of learning\nhorizon K")
+    axes[1, 0].set_ylabel("Skewness of the split\nhorizon K")
+    fig.legend(handles=h1, loc="upper center", bbox_to_anchor=(0.5, 0.995), ncol=5, fontsize=8.5,
+               title="Value of learning: decomposition as a share of the full bandit's", title_fontsize=9)
+    fig.legend(handles=h2, loc="upper center", bbox_to_anchor=(0.5, 0.505), ncol=5, fontsize=8.5,
+               title="Skewness: change of the senior budget, decomposition vs. full bandit", title_fontsize=9)
+    fig.text(0.5, 0.004, "π0 = 0.5, θ_L = 0.5. Both under the same (ex-ante) budget rule; full bandit = Bayes-optimal "
+             "policy by dynamic programming. Numbers in results/region_map_summary.txt.",
+             ha="center", va="bottom", fontsize=8, color=ps.MUTED)
+    fig.tight_layout(rect=(0, 0.03, 1, 0.9), h_pad=6.0)
+    fig.savefig(os.path.join(RES, "fig_region_vs_K.png"), dpi=170)
+    print("-> results/fig_region_vs_K.png")
 
 
 if __name__ == "__main__":

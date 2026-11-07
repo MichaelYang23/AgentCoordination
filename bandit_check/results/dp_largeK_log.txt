@@ -1,0 +1,14 @@
+[     0s] thH=4 (r=8) K=200 Bmax=2400
+   [   1.0s] etc_smooth
+   [  82.9s] opt_B (357 multipliers)
+   [  83.2s] etc_B
+[    84s]   max optimal tau: same rule 20 (cap 60), paper 10.7
+[    85s]   shifts done
+[    85s] thH=16 (r=32) K=200 Bmax=3394
+   [   1.4s] etc_smooth
+   [  80.8s] opt_B (357 multipliers)
+   [  81.0s] etc_B
+[   166s]   max optimal tau: same rule 10 (cap 60), paper 5.4
+[   168s]   shifts done
+[   168s] thH=8 (r=16) K=400 Bmax=4800
+   [   1.9s] etc_smooth
