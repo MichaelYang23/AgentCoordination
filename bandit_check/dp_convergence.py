@@ -59,6 +59,7 @@ def main():
     ps.setup()
     fig, axes = plt.subplots(2, len(THH), figsize=(15, 7.6))
     lines = ["Decomposition vs full bandit (DP), ex-ante budget rule, pi0 = 0.5, v1/v2 = 2"]
+    costs = ["\nTotal learning cost K L(rho) - V_K(rho K) in impressions (decomposition / full bandit)"]
     grid = np.round(np.arange(0, 12.0 + 1e-9, 0.002), 6)
     ts = np.round(np.arange(0.2, 12.0 + 1e-9, 0.01), 4)
     for j, thH in enumerate(THH):
@@ -92,6 +93,13 @@ def main():
                 i = int(np.argmin(np.abs(rho - x)))
                 at[x] = ((C["etc_B"][i] - C["W"][i]) / K, (C["opt_B"][i] - C["W"][i]) / K)
             il = {x: int(np.argmin(np.abs(grid - x))) for x in at}
+            cost = []
+            for x in (1.0, 2.5, 5.0, 10.0):
+                i = int(np.argmin(np.abs(rho - x)))
+                Lx = L[int(np.argmin(np.abs(grid - x)))]
+                cost.append((K * Lx - C["etc_B"][i], K * Lx - C["opt_B"][i]))
+            costs.append("  r=%2d K=%3d  " % (r, K) + "  ".join("rho=%g: %.2f / %.2f" % (x, c[0], c[1])
+                                                                  for x, c in zip((1.0, 2.5, 5.0, 10.0), cost)))
             lines.append("  K=%3d  switch t: decomposition %s, full bandit %s  |  per-period value of learning "
                          "(dec / full bandit / limit) at rho=1: %.4f/%.4f/%.4f  2.5: %.4f/%.4f/%.4f  "
                          "5: %.4f/%.4f/%.4f  10: %.4f/%.4f/%.4f"
@@ -117,6 +125,7 @@ def main():
              ha="center", va="bottom", fontsize=8, color=ps.MUTED)
     fig.tight_layout(rect=(0, 0.03, 1, 0.88))
     fig.savefig(os.path.join(RES, "fig_dp_convergence.png"), dpi=170)
+    lines += costs
     txt = "\n".join(lines)
     print(txt)
     with open(os.path.join(RES, "dp_convergence_summary.txt"), "w") as f:

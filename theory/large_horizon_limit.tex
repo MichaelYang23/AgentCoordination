@@ -22,7 +22,7 @@
 \DeclareMathOperator{\Var}{Var}
 
 \title{The Learning Premium in the Large-Horizon Limit\\[3pt]
-\large Propositions 1--2 (draft for \emph{Orchestrating Agent Teams})}
+\large Propositions 1--3 (draft for \emph{Orchestrating Agent Teams})}
 \author{Working draft}
 \date{\today}
 
@@ -40,6 +40,11 @@ characterise the shape of the limit premium (Proposition~\ref{prop:shape}): it i
 budgets (information, even if free, lowers the value of a budget-paced team), positive and decaying like
 $\Var(\theta)/\rho^2$ at large budgets, and it opens with a kink, so the marginal-value ratio jumps at entry.
 The upper edge of the learning window is a finite-horizon effect.
+Finally (Proposition~\ref{prop:common}), when the decomposition and the full bandit (the Bayes-optimal policy that
+learns and executes in every auction) face the same ex-ante budget rule, both converge to the value of knowing the
+state from the start: the full bandit's total learning cost stays bounded, the decomposition's grows at most like
+$\log K$, so the ratio of their learning premia tends to one and their allocations converge to the same limit.
+Under the paper's budget rule the decomposition keeps a gap that grows with the budget.
 \end{abstract}
 
 \section{Setup and notation}\label{sec:setup}
@@ -413,5 +418,218 @@ here and across the parameter sweep, but not proved. (ii) A proof of the CE limi
 implements the concave envelope (e.g.\ a planner-chosen probe bid with belief-dependent stopping) would lower the
 limit entry point from $\rho_1=0.456$ toward $0.305$; Proposition~\ref{prop:limit}(b) shows that no learn-then-commit
 protocol can do better than $\Phi$.
+
+\section{Proposition 3: the decomposition and the full bandit under a common budget rule}\label{sec:common}
+
+The full bandit, the Bayes-optimal policy that learns and executes in every auction, is computed by dynamic
+programming under an \emph{ex-ante} budget rule: the expected total spend may not exceed $B$. To compare it with the
+decomposition we hold the budget rule fixed and give the decomposition the same rule.
+
+\paragraph{Ex-ante budget rule.} A bidding policy chooses $b_t\ge0$ in auction $t=1,\dots,K$ as a (possibly
+randomised) function of past bids and outcomes. With $c_t=b_t\ind{\{\text{win}_t\}}$ the payment in auction $t$, the
+policy is feasible for budget $B$ if $\E[\sum_t c_t]\le B$ under the prior-predictive law. Let
+\[
+V^{\mathrm{FB}}_K(B):=\sup\Bigl\{\E\Bigl[\sum_t\ind{\{\text{win}_t\}}\Bigr]:\ \text{feasible policies}\Bigr\},
+\]
+the \emph{full bandit}, and let $V^{\mathrm D}_K(B)$ be the same supremum over the \emph{decomposition} class
+$\mathcal D$: bid $b^I$ for $\tau$ auctions, then a constant bid $b(w)$ that depends only on the number of probe wins
+$w$, for $\tau\in\{0,\dots,K-1\}$ and any function $b(\cdot)\ge0$. The benchmark is unchanged: a policy that does not
+use outcomes is best off with a constant paced bid, so it earns $W_K(B)=K\,g(\pi_0;B/K)$.
+
+\paragraph{The limit object.} Write $g_H(s):=g(1;s)$ and $g_L(s):=g(0;s)$ for the per-period win rate at per-period spend
+$s$ when the state is known, and $\pi_H=\pi_0$, $\pi_L=1-\pi_0$. Define
+\[
+\mathcal L(\rho):=\max\Bigl\{\pi_H g_H(s_H)+\pi_L g_L(s_L):\ s_H,s_L\ge0,\ \pi_Hs_H+\pi_Ls_L\le\rho\Bigr\},
+\qquad \Lambda(\rho):=\mathcal L(\rho)-g(\pi_0;\rho),
+\]
+the per-period value of knowing the state from the start under the ex-ante rule, and its excess over the benchmark.
+The maximum exists (compact feasible set, continuous objective); $\mathcal L$ is continuous, increasing and strictly
+concave, with $\mathcal L(0)=0$ (if $\rho_1\ne\rho_2$ have maximisers $s^1\ne s^2$, their midpoint is feasible for
+$(\rho_1+\rho_2)/2$ and strictly better than the average, by strict concavity of $g_H,g_L$).
+
+\begin{lemma}[Posterior concentration under adaptive bids]\label{lem:adapt}
+Let
+\[
+\beta(b):=\sqrt{q_H(b)\,q_L(b)}+\sqrt{(1-q_H(b))(1-q_L(b))},
+\]
+which is $<1$ for every $b>0$, and let the bids $b_1,b_2,\dots$ be predictable with values in a set on which $\beta\le\bar\beta<1$. Then
+\[
+\E[1-\pi_t\mid\theta_H]\le\kappa_0^{-1/2}\bar\beta^{\,t},\qquad \E[\pi_t\mid\theta_L]\le\kappa_0^{1/2}\bar\beta^{\,t},
+\]
+and the probability that the more likely state under $\pi_t$ is not the true one is at most
+$4\sqrt{\pi_0(1-\pi_0)}\,\bar\beta^{\,t}$.
+\end{lemma}
+
+\begin{proof}
+Under $\theta_H$, $Z_t:=\kappa_t^{-1/2}$ (with $\kappa_t$ the posterior odds of $\theta_H$) satisfies
+\[
+\E[Z_{t+1}\mid\mathcal F_t]=Z_t\sum_{y}p_H(y)\sqrt{p_L(y)/p_H(y)}=Z_t\,\beta(b_{t+1})\le\bar\beta\,Z_t,
+\]
+where $y$ ranges over win and loss at the bid $b_{t+1}$, which is $\mathcal F_t$-measurable. Hence $\E[Z_t]\le\kappa_0^{-1/2}\bar\beta^{\,t}$,
+and $1-\pi_t\le Z_t$ as in Lemma~\ref{lem:conc}; the case $\theta_L$ is symmetric. Misclassification under $\theta_H$
+means $\pi_t<1/2$, whose probability is at most $2\E[1-\pi_t\mid\theta_H]$ by Markov's inequality; averaging the two
+states gives the last bound. $\beta(b)<1$ because $q_H(b)\neq q_L(b)$ for $b>0$.
+\end{proof}
+
+\begin{proposition}[Convergence under a common budget rule]\label{prop:common}
+Fix $\rho>0$ and let $B=\rho K$. Under the ex-ante budget rule:
+\begin{enumerate}
+\item[(a)] \emph{Ordering.} $W_K(\rho K)\le V^{\mathrm D}_K(\rho K)\le V^{\mathrm{FB}}_K(\rho K)\le K\mathcal L(\rho)$ for every $K$.
+\item[(b)] \emph{Rates.} There are constants $C_\rho,C'_\rho$ such that for all $K$ large enough
+\[
+K\mathcal L(\rho)-V^{\mathrm{FB}}_K(\rho K)\le C'_\rho,\qquad K\mathcal L(\rho)-V^{\mathrm D}_K(\rho K)\le C_\rho\,(1+\log K).
+\]
+The full bandit's total learning cost is bounded; the decomposition's grows at most logarithmically.
+\item[(c)] \emph{Learning premia.} $\Lambda(\rho)>0$, $[V^{X}_K(\rho K)-W_K(\rho K)]/K\to\Lambda(\rho)$ for
+$X\in\{\mathrm D,\mathrm{FB}\}$, and
+\[
+1\ \ge\ \frac{V^{\mathrm D}_K(\rho K)-W_K(\rho K)}{V^{\mathrm{FB}}_K(\rho K)-W_K(\rho K)}\ \ge\ 1-\frac{C_\rho(1+\log K)}{K\,\Lambda(\rho)}\ \to\ 1,
+\]
+uniformly on compact subsets of $(0,\infty)$.
+\item[(d)] \emph{Where convergence is slow.} $\Lambda(\rho)=O(\rho^{3/2})$ as $\rho\downarrow0$, and
+$\Lambda(\rho)=\Var_{\pi_0}(\sqrt\theta)/\rho+O(\rho^{-2})$ as $\rho\to\infty$. For fixed $K$ the bound in (c) is
+therefore weakest at small and at large budgets, and the set of budgets on which the ratio exceeds any level
+$1-\delta$ widens as $K$ grows.
+\item[(e)] \emph{Allocation.} Fix $v_1>v_2>0$, $t>0$ and $T=tK$. For $X\in\{\mathrm D,\mathrm{FB}\}$ the planner's
+allocation satisfies $a^X_K/K\to\alpha^{\mathcal L}(t)$, the unique maximiser of $v_1\mathcal L(\alpha)+v_2\mathcal L(t-\alpha)$
+on $[0,t]$, while $a^E_K/K=\alpha^E(t)$ for every $K$. Hence $(a^{\mathrm D}_K-a^{\mathrm{FB}}_K)/K\to0$, and whenever
+$\alpha^{\mathcal L}(t)\ne\alpha^E(t)$ the two learning teams shift the split in the same direction for all $K$ large
+enough; that direction is the sign of $\mathcal L'(\alpha^E)/g_\rho(\pi_0;\alpha^E)-\mathcal L'(t-\alpha^E)/g_\rho(\pi_0;t-\alpha^E)$.
+\end{enumerate}
+\end{proposition}
+
+\begin{proof}
+\emph{(a)} The policy with $\tau=0$ and the constant paced bid $b^*(\pi_0,\rho)$ lies in $\mathcal D$, spends exactly
+$\rho K$ in expectation and earns $W_K$; and $\mathcal D$ is a subset of all policies. For the last inequality fix any
+feasible policy and condition on $\theta$. In auction $t$ the bid $b_t$ is chosen before the outcome, so
+$\E[\ind{\{\text{win}_t\}}\mid\theta,\mathcal F_{t-1},b_t]=q_\theta(b_t)=g_\theta(s_t)$ with $s_t:=b_tq_\theta(b_t)$, because in a
+known state the bid that spends $s_t$ per period is $b_t$ itself. By Jensen's inequality for the concave $g_\theta$,
+the expected wins given $\theta$ are at most $K g_\theta(S_\theta/K)$, where $S_\theta=\E[\sum_tc_t\mid\theta]$. Feasibility
+is $\pi_HS_H+\pi_LS_L\le\rho K$, so the policy earns at most $K\mathcal L(\rho)$.
+
+\emph{(b)} Let $(s_H^*,s_L^*)$ attain $\mathcal L(\rho)$; the budget binds, $\pi_Hs^*_H+\pi_Ls^*_L=\rho$, and
+$s^*_H,s^*_L>0$ because $g_\theta'(0+)=\infty$. For
+$\varepsilon\in(0,1)$ let $b_\theta$ be the bid that spends $(1-\varepsilon)s^*_\theta$ per period in the known state
+$\theta$, and $\bar b:=\max_\theta b^*(\theta;s^*_\theta)\ge b_\theta$. Two policies use these bids.
+
+\emph{Full bandit.} In every auction bid $b_{\hat\theta_t}$, where $\hat\theta_t$ is the more likely state under
+$\pi_{t-1}$. For $\varepsilon\in[0,\tfrac12]$ the two bids lie in a compact subset of $(0,\infty)$ that does not depend
+on $\varepsilon$, so Lemma~\ref{lem:adapt} applies with one $\bar\beta<1$ for all such $\varepsilon$, and the misclassification
+probabilities $e_t$ satisfy $\sum_te_t\le E:=2/(1-\bar\beta)$. When $\hat\theta_t=\theta$ the
+auction spends $(1-\varepsilon)s^*_\theta$ and wins with probability $g_\theta((1-\varepsilon)s^*_\theta)$; otherwise it spends
+at most $\bar b$ and wins with probability $\ge0$. The expected spend is at most $K(1-\varepsilon)\rho+\bar bE$, which is
+$\le K\rho$ for $\varepsilon=\bar bE/(\rho K)$, which is at most $\tfrac12$ for $K$ large. Using $g_\theta((1-\varepsilon)s)\ge(1-\varepsilon)g_\theta(s)$ (concavity and
+$g_\theta(0)=0$) and $g_\theta\le1$, the expected wins are at least
+$\sum_t[(1-\varepsilon)\mathcal L(\rho)-e_t]\ge K\mathcal L(\rho)-\varepsilon K-E$, so
+$K\mathcal L(\rho)-V^{\mathrm{FB}}_K\le C'_\rho:=E(1+\bar b/\rho)$.
+
+\emph{Decomposition.} Probe at $b^I$ for $\tau_K=\lceil\log K/\log(1/\beta)\rceil$ auctions, with $\beta=\beta(b^I)$ as
+in Lemma~\ref{lem:conc}; then bid $b_{\hat\theta}$, $\hat\theta$ the more likely state after the probes (a function of
+$w$), for the remaining $K-\tau_K$ auctions. By Lemma~\ref{lem:adapt} the misclassification probability is
+$e\le2\beta^{\tau_K}\le2/K$. The probes spend at most $\tau_Kb^I$, so the expected spend is at most
+$\tau_Kb^I+K(1-\varepsilon)\rho+K\bar be$, which is $\le K\rho$ for $\varepsilon=(\tau_Kb^I+2\bar b)/(\rho K)$. The expected wins
+are at least $(K-\tau_K)[(1-\varepsilon)\mathcal L(\rho)-e]\ge K\mathcal L(\rho)-\tau_K-\varepsilon K-2$, and
+$\tau_K\le1+\log K/\log(1/\beta)$ gives $K\mathcal L(\rho)-V^{\mathrm D}_K\le(1+b^I/\rho)(1+\log K/\log(1/\beta))+2\bar b/\rho+2$,
+which is at most $C_\rho(1+\log K)$ with $C_\rho=(1+b^I/\rho)(1+1/\log(1/\beta))+2+2\bar b/\rho$.
+
+\emph{(c)} Divide (a)--(b) by $K$ and subtract $W_K/K=g(\pi_0;\rho)$. For the ratio, the numerator is at least
+$K\Lambda-C_\rho(1+\log K)$ and the denominator at most $K\Lambda$. $\Lambda(\rho)>0$: the uninformed bid $b_0$ is a
+feasible point of the problem defining $\mathcal L$ (it spends $s_\theta=b_0q_\theta(b_0)$ in state $\theta$ and earns
+$g(\pi_0;\rho)$), but it is not optimal, because the marginal value of spend in a known state at bid $b$,
+\[
+g_\theta'(s)=\frac{q_\theta'(b)}{q_\theta(b)+b\,q'_\theta(b)}=\frac{\theta}{b(b+2\theta)},
+\]
+is strictly increasing in $\theta$ at the common bid $b_0$, so moving spend towards $\theta_H$ raises the value.
+Uniformity: $C_\rho$ is bounded and $\Lambda$ bounded away from zero on compact subsets of $(0,\infty)$.
+
+\emph{(d) Small budgets.} Let $\mu_0=g_\rho(\pi_0;\rho)$ and $\phi_\theta(b):=q_\theta(b)(1-\mu_0b)$. The uninformed bid
+$b_0$ maximises $\pi_H\phi_H+\pi_L\phi_L$ and spends $\rho$, while by weak duality
+$\mathcal L(\rho)\le\pi_H\max_b\phi_H+\pi_L\max_b\phi_L+\mu_0\rho$. Hence
+$\Lambda(\rho)\le\sum_\theta\pi_\theta[\phi_\theta(b^\star_\theta)-\phi_\theta(b_0)]$ with
+$b^\star_\theta=-\theta+\sqrt{\theta^2+\theta/\mu_0}=\tfrac1{2\mu_0}-\tfrac1{8\theta\mu_0^2}+O(\mu_0^{-3})$. Both $b^\star_\theta$ and
+$b_0$ lie in an interval of length $O(\mu_0^{-2})$, on which $|\phi''_\theta|=O(\mu_0)$, so
+$\Lambda(\rho)=O(\mu_0\cdot\mu_0^{-4})=O(\mu_0^{-3})$, and $\mu_0\sim\tfrac12\sqrt{m_1(\pi_0)/\rho}$ by
+Proposition~\ref{prop:shape}(a). \emph{Large budgets.} In a known state $b\,q_\theta(b)=s$ gives
+$b=\tfrac12(s+\sqrt{s^2+4s\theta})\in[s,s+\theta]$, hence $1-\tfrac{\theta}{s}\le1-\tfrac{\theta}{s+\theta}\le g_\theta(s)\le1-\tfrac{\theta}{s+2\theta}$.
+The lower bound at $s_\theta=\rho\sqrt\theta/\E\sqrt\theta$ gives $\mathcal L(\rho)\ge1-(\E\sqrt\theta)^2/\rho$; the upper bound and
+the Cauchy--Schwarz inequality $\sum_\theta\pi_\theta\theta/x_\theta\ge(\E\sqrt\theta)^2/\sum_\theta\pi_\theta x_\theta$ give
+$\mathcal L(\rho)\le1-(\E\sqrt\theta)^2/(\rho+2\mu_1)$. With $g(\pi_0;\rho)=1-\mu_1/\rho+O(\rho^{-2})$ from
+Proposition~\ref{prop:shape}(b), $\Lambda(\rho)=[\mu_1-(\E\sqrt\theta)^2]/\rho+O(\rho^{-2})=\Var(\sqrt\theta)/\rho+O(\rho^{-2})$.
+
+\emph{(e)} As in Corollary~\ref{cor:alloc}: $\alpha\mapsto V^X_K(\alpha K)/K$ is nondecreasing and converges pointwise to the
+continuous $\mathcal L$ by (c), hence uniformly on $[0,t]$ (P\'olya); limit points of $a^X_K/K$ maximise the limit
+objective, whose maximiser is unique because $\mathcal L$ is strictly concave. The sign statement is the first-order
+condition at $\alpha^E$, where $v_1g_\rho(\pi_0;\alpha^E)=v_2g_\rho(\pi_0;t-\alpha^E)$, combined with strict concavity;
+$\mathcal L$ is differentiable with $\mathcal L'(\rho)$ equal to the multiplier of its budget constraint.
+\end{proof}
+
+\begin{remark}[Why the decomposition pays $\log K$ and the full bandit does not]
+Every auction is informative ($q_H(b)\ne q_L(b)$ for $b>0$), so a team that keeps bidding near the state-contingent
+optimum learns the state as a by-product: its misclassification probability decays geometrically and its total loss
+is $O(1)$. The decomposition must commit after a separate probing phase, whose length has to grow like $\log K$ for
+the commitment error to cost $O(1)$ over the remaining $K-\tau$ auctions. Proposition~\ref{prop:common}(b) bounds the
+decomposition's cost by $O(\log K)$; we do not prove the matching lower bound, but Table~\ref{tab:common} shows the
+cost growing by a roughly constant amount per doubling of $K$, while the full bandit's stays flat.
+\end{remark}
+
+\begin{remark}[The budget rule matters more than the decomposition]
+With the paper's budget rule the decomposition's per-period premium converges instead to $\Psi(\rho)$
+(Proposition~\ref{prop:limit}; $\Psi=\max\{\VPI,0\}$ at the baseline), so its learning premium relative to the full
+bandit tends to $\Psi(\rho)/\Lambda(\rho)$ (at $\rho=10$: $0.43$, $0.54$, $0.66$ for $r=8,16,32$). At large budgets
+$\Psi(\rho)=\VPI(\rho)\approx\Var(\theta)/\rho^2$ (Proposition~\ref{prop:shape}(b)) while $\Lambda(\rho)\approx\Var(\sqrt\theta)/\rho$,
+so this ratio tends to zero: the gap grows with the budget and does not close as $K\to\infty$. The two rules differ in what information
+buys. Knowing the state, an ex-ante team can shift spend towards the state where the marginal dollar buys more
+(at large budgets it spends in proportion to $\sqrt\theta$), whereas under the paper's rule each state must spend its own
+budget. At small budgets the uninformed bid already spends across states almost as an informed ex-ante team would,
+which is why $\Lambda(\rho)=O(\rho^{3/2})$, and under the paper's rule information forces an equal split, which is why
+$\VPI<0$ there.
+\end{remark}
+
+\subsection{Numerical verification}
+
+We computed the full bandit (Bayes-optimal policy by dynamic programming over periods and posterior log-odds, with a
+Lagrange multiplier for the ex-ante budget) and the decomposition under the same rule for $r=8,16,32$
+($\theta_H=4,8,16$), $\pi_0=\tfrac12$ and $K=50,100,200,400$ (code: \texttt{bandit\_check/run\_dp\_largeK.py},
+\texttt{dp\_convergence.py}, \texttt{region\_map.py}). The asymptotics of (d) hold at the baseline: $\Lambda(\rho)/\rho$ falls
+from $0.0026$ to $0.0002$ as $\rho$ falls from $10^{-2}$ to $10^{-4}$, and $\rho\Lambda(\rho)=1.123$ at $\rho=10^4$
+(theory: $\Var(\sqrt\theta)=1.125$).
+
+\begin{table}[h]
+\centering\small
+\caption{Total learning cost $K\mathcal L(\rho)-V_K(\rho K)$ in impressions: decomposition / full bandit (ex-ante rule).}
+\label{tab:common}
+\begin{tabular}{@{}lrcccc@{}}
+\toprule
+$r$ & $\rho$ & $K=50$ & $K=100$ & $K=200$ & $K=400$\\
+\midrule
+8  & 2.5 & 0.75 / 0.13 & 1.11 / 0.13 & 1.52 / 0.13 & 1.94 / 0.13\\
+8  & 10  & 0.88 / 0.22 & 1.64 / 0.23 & 2.62 / 0.23 & 3.76 / 0.23\\
+16 & 2.5 & 0.53 / 0.10 & 0.69 / 0.10 & 0.84 / 0.10 & 1.00 / 0.10\\
+16 & 10  & 1.16 / 0.20 & 1.67 / 0.20 & 2.22 / 0.20 & 2.79 / 0.20\\
+32 & 2.5 & 0.31 / 0.08 & 0.38 / 0.08 & 0.44 / 0.08 & 0.51 / 0.08\\
+32 & 10  & 0.92 / 0.16 & 1.20 / 0.16 & 1.49 / 0.16 & 1.79 / 0.17\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The ratio of learning premia rises with $K$ at every budget (at $\rho=5$: $0.08,0.25,0.45,0.63$ for $r=8$;
+$0.49,0.65,0.77,0.86$ for $r=16$; $0.75,0.84,0.90,0.94$ for $r=32$), and the budgets with ratio at least $0.8$ widen
+on both sides, as (d) predicts: for $r=16$ they are $\rho\in[0.95,1.27]$, $[0.78,2.08]$, $[0.64,3.75]$ and $[0.53,9.07]$
+for $K=50,100,200,400$. The allocation shifts agree in direction on $84$--$93\%$ of total budgets for $r\ge16$, and
+on $28\%$ ($K=50$) to $88\%$ ($K=400$) for $r=8$. The slowest object is the total budget at which learning switches
+from skewing to balancing the split, which depends on the junior team's small budget, where (d) makes the bound weakest:
+the decomposition's switch point moves towards the limit only for $r=32$ ($t=2.26,2.39,2.95,3.42$ against $4.09$), starts
+to move for $r=16$ at $K=400$ ($1.60\to1.92$ against $3.01$), and has not moved for $r=8$ ($\approx1.07$ against $2.32$),
+while the full bandit's is within $0.11$ of the limit already at $K=50$. Between the two switch points the full bandit's
+shift is small, $0.25$--$0.54\%$ of the total budget at $K=100$.
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=\textwidth]{figs/fig_dp_convergence.png}
+\caption{Ex-ante budget rule, $\pi_0=\tfrac12$. Top: per-period value of learning; bottom: per-period shift of the
+senior budget ($v_1/v_2=2$). Blue: decomposition, $K=50,100,200,400$ (light to dark); orange: full bandit; dashed: the
+limit $K\to\infty$ of Proposition~\ref{prop:common}.}
+\label{fig:common}
+\end{figure}
 
 \end{document}
