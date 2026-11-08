@@ -42,8 +42,9 @@ $\Var(\theta)/\rho^2$ at large budgets, and it opens with a kink, so the margina
 The upper edge of the learning window is a finite-horizon effect.
 Finally (Proposition~\ref{prop:common}), when the decomposition and the full bandit (the Bayes-optimal policy that
 learns and executes in every auction) face the same ex-ante budget rule, both converge to the value of knowing the
-state from the start: the full bandit's total learning cost stays bounded, the decomposition's grows at most like
-$\log K$, so the ratio of their learning premia tends to one and their allocations converge to the same limit.
+state from the start: the full bandit's total learning cost stays bounded, the decomposition's grows like $\log K$
+(Proposition~\ref{prop:lower} shows this order cannot be improved by any probe-then-commit design), so the ratio of
+their learning premia tends to one and their allocations converge to the same limit.
 Under the paper's budget rule the decomposition keeps a gap that grows with the budget.
 \end{abstract}
 
@@ -563,13 +564,84 @@ condition at $\alpha^E$, where $v_1g_\rho(\pi_0;\alpha^E)=v_2g_\rho(\pi_0;t-\alp
 $\mathcal L$ is differentiable with $\mathcal L'(\rho)$ equal to the multiplier of its budget constraint.
 \end{proof}
 
+\begin{proposition}[The decomposition's learning cost is of order $\log K$]\label{prop:lower}
+Under the ex-ante budget rule fix $\rho>0$ and let $\mu^*:=\mathcal L'(\rho)>0$. For $\theta\in\{H,L\}$ let
+$\phi_\theta(b):=q_\theta(b)(1-\mu^*b)$, $\ell_\theta:=\max_{b\ge0}\phi_\theta(b)$ and $r_\theta(b):=\ell_\theta-\phi_\theta(b)\ge0$, and for a
+bid $b>0$ let $\mathrm{kl}_\theta(b)$ be the Kullback--Leibler divergence of the win indicator at $b$ under $\theta$ from
+that under the other state. Consider any feasible policy that bids a fixed $b_p>0$ until a stopping time $\sigma\le K$
+of these probe outcomes and then follows a bidding plan, possibly time-varying and randomised, that uses the probe
+outcomes but no later ones. Then
+\[
+c_\rho:=\max_{\theta}\frac{\pi_\theta\,r_\theta(b_p)}{2\,\mathrm{kl}_\theta(b_p)}>0
+\qquad\text{and}\qquad K\mathcal L(\rho)-V_K(\rho K)\ \ge\ c_\rho\log K\quad\text{for all }K\ge K_\rho .
+\]
+This covers the decomposition ($b_p=b^I$, deterministic $\tau$), its adaptive-stopping version, and the same structure
+with any other fixed probe bid; $c_\rho$ and $K_\rho$ do not depend on the policy beyond $b_p$. With
+Proposition~\ref{prop:common}(b),
+\[
+c_\rho\log K\ \le\ K\mathcal L(\rho)-V^{\mathrm D}_K(\rho K)\ \le\ C_\rho(1+\log K),\qquad
+V^{\mathrm{FB}}_K(\rho K)-V^{\mathrm D}_K(\rho K)\ \ge\ c_\rho\log K-C'_\rho\ \to\ \infty .
+\]
+\end{proposition}
+
+\begin{proof}
+\emph{Step 1: Lagrangian regret.} For a feasible policy, $\E[\text{wins}]\le\E[\text{wins}]-\mu^*(\E[\text{spend}]-\rho K)
+=\mu^*\rho K+\E\sum_t\phi_\theta(b_t)$, because given $\theta$ and $b_t$ auction $t$ yields expected wins minus $\mu^*$ times
+expected payment equal to $\phi_\theta(b_t)$. The problem defining $\mathcal L$ is concave with a Slater point, so strong
+duality holds with multiplier $\mu^*$; substituting $s=b\,q_\theta(b)$, $\max_s[g_\theta(s)-\mu^*s]=\ell_\theta$ and
+$\mathcal L(\rho)=\mu^*\rho+\pi_H\ell_H+\pi_L\ell_L$. Hence $K\mathcal L(\rho)-V\ge\mathrm{Reg}:=\E\sum_tr_\theta(b_t)$, and
+$\mathrm{Reg}=\pi_H\mathrm{Reg}_H+\pi_L\mathrm{Reg}_L$ with $\mathrm{Reg}_\theta:=\E_\theta\sum_tr_\theta(b_t)$. Both sides are linear in a
+randomisation that is independent of $\theta$, so it suffices to treat deterministic plans.
+
+\emph{Step 2: no bid is optimal in both states.} Writing
+$\phi_\theta(b)=(1+\mu^*\theta)-\mu^*b-\theta(1+\mu^*\theta)/(b+\theta)$ shows that $\phi_\theta$ is strictly concave with unique
+maximiser $b^\star_\theta=\sqrt{\theta^2+\theta/\mu^*}-\theta=\mu^{*-1}/(1+\sqrt{1+1/(\theta\mu^*)})$, which is strictly increasing in
+$\theta$. Hence $r_H(b)+r_L(b)>0$ for every $b\ge0$; it is continuous and tends to $\infty$ as $b\to\infty$, so
+$D:=\min_{b\ge0}[r_H(b)+r_L(b)]>0$. For the same reason $r_\theta(b_p)>0$ for at least one $\theta$, so $c_\rho>0$.
+
+\emph{Step 3: a test.} Let $\theta'$ attain $c_\rho$, $\theta''$ be the other state, and $n:=\E_{\theta'}[\sigma]$. Every probe costs
+$r_{\theta'}(b_p)$ in state $\theta'$, so $\mathrm{Reg}_{\theta'}\ge r_{\theta'}(b_p)\,n$. After $\sigma$, each bid satisfies
+$r_{\theta'}(b_t)+r_{\theta''}(b_t)\ge D$, so at least one term is $\ge D/2$; let $N''$ be the number of auctions after $\sigma$
+with $r_{\theta''}(b_t)\ge D/2$ (a function of the probe outcomes). Declare $\theta'$ if $\sigma\le K/2$ and
+$N''\ge(K-\sigma)/2$, and $\theta''$ otherwise; the decision is measurable with respect to the probe outcomes up to the
+stopping time $\sigma':=\sigma\wedge\lfloor K/2\rfloor$. Under $\theta''$, declaring $\theta'$ forces at least
+$(K-\sigma)/2\ge K/4$ auctions with regret $\ge D/2$, so $P_{\theta''}(\text{declare }\theta')\le8\mathrm{Reg}_{\theta''}/(DK)$.
+Under $\theta'$, declaring $\theta''$ means either $\sigma>K/2$, which has probability at most $2n/K$, or
+$N''<(K-\sigma)/2$ with $\sigma\le K/2$, which forces at least $K/4$ auctions with $r_{\theta'}\ge D/2$; hence
+$P_{\theta'}(\text{declare }\theta'')\le2n/K+8\mathrm{Reg}_{\theta'}/(DK)$.
+
+\emph{Step 4: information.} The probe outcomes are i.i.d.\ given $\theta$, so by Wald's identity the divergence of their
+law up to $\sigma'$ under $\theta'$ from that under $\theta''$ is $\E_{\theta'}[\sigma']\,\mathrm{kl}_{\theta'}(b_p)\le n\,\mathrm{kl}_{\theta'}(b_p)$. The
+Bretagnolle--Huber inequality gives $P_{\theta'}(\text{declare }\theta'')+P_{\theta''}(\text{declare }\theta')\ge\tfrac12e^{-n\,\mathrm{kl}_{\theta'}(b_p)}$,
+and with Step 3,
+\[
+\frac{2n}{K}+\frac{8(\mathrm{Reg}_{\theta'}+\mathrm{Reg}_{\theta''})}{DK}\ \ge\ \tfrac12\,e^{-n\,\mathrm{kl}_{\theta'}(b_p)} .
+\]
+
+\emph{Step 5: two cases.} Let $a:=1/(2\,\mathrm{kl}_{\theta'}(b_p))$. If $n\ge a\log K$, then
+\[
+\mathrm{Reg}\ \ge\ \pi_{\theta'}\mathrm{Reg}_{\theta'}\ \ge\ \pi_{\theta'}\,r_{\theta'}(b_p)\,a\log K\ =\ c_\rho\log K .
+\]
+If $n<a\log K$, then
+$e^{-n\,\mathrm{kl}}>K^{-1/2}$ and the display gives
+\[
+\mathrm{Reg}\ \ge\ \min(\pi_H,\pi_L)\,(\mathrm{Reg}_{\theta'}+\mathrm{Reg}_{\theta''})\ \ge\ \min(\pi_H,\pi_L)\Bigl(\frac{D}{16}\sqrt K-\frac{D}{4}\,a\log K\Bigr),
+\]
+which exceeds $c_\rho\log K$ for $K$ large.
+\end{proof}
+
 \begin{remark}[Why the decomposition pays $\log K$ and the full bandit does not]
 Every auction is informative ($q_H(b)\ne q_L(b)$ for $b>0$), so a team that keeps bidding near the state-contingent
 optimum learns the state as a by-product: its misclassification probability decays geometrically and its total loss
 is $O(1)$. The decomposition must commit after a separate probing phase, whose length has to grow like $\log K$ for
-the commitment error to cost $O(1)$ over the remaining $K-\tau$ auctions. Proposition~\ref{prop:common}(b) bounds the
-decomposition's cost by $O(\log K)$; we do not prove the matching lower bound, but Table~\ref{tab:common} shows the
-cost growing by a roughly constant amount per doubling of $K$, while the full bandit's stays flat.
+the commitment error to cost $O(1)$ over the remaining $K-\tau$ auctions. Propositions~\ref{prop:common}(b)
+and~\ref{prop:lower} pin the decomposition's cost to order $\log K$, and Table~\ref{tab:common} shows it growing by a
+roughly constant amount per doubling of $K$ while the full bandit's stays flat. The lower bound needs only two features
+of the decomposition: probes at a bid that does not track the posterior, and an execution phase that stops learning.
+A standard refinement (exact error exponents instead of the Bretagnolle--Huber bound) suggests the slope
+$c^{\mathrm{p}}_\rho/\log(1/\beta)$, where $c^{\mathrm p}_\rho:=\pi_Hr_H(b^I)+\pi_Lr_L(b^I)$ is the expected Lagrangian cost of one
+probe and $\log(1/\beta)$ is the Chernoff information of the probe outcome (the two outcome laws at $b^I$ are mirror
+images, $q_H(b^I)=1-q_L(b^I)$); Table~\ref{tab:slopes} compares it with the data.
 \end{remark}
 
 \begin{remark}[The budget rule matters more than the decomposition]
@@ -622,6 +694,26 @@ the decomposition's switch point moves towards the limit only for $r=32$ ($t=2.2
 to move for $r=16$ at $K=400$ ($1.60\to1.92$ against $3.01$), and has not moved for $r=8$ ($\approx1.07$ against $2.32$),
 while the full bandit's is within $0.11$ of the limit already at $K=50$. Between the two switch points the full bandit's
 shift is small, $0.25$--$0.54\%$ of the total budget at $K=100$.
+
+\begin{table}[h]
+\centering\small
+\caption{Growth of the decomposition's learning cost per unit of $\log K$: the proved lower bound $c_\rho$
+(Proposition~\ref{prop:lower}, $b_p=b^I$), the observed slope between $K=50$ and $K=400$ (Table~\ref{tab:common}),
+the heuristic slope $c^{\mathrm p}_\rho/\log(1/\beta)$, and the slope of the proved upper bound $(1+b^I/\rho)/\log(1/\beta)$.}
+\label{tab:slopes}
+\begin{tabular}{@{}lrcccc@{}}
+\toprule
+$r$ & $\rho$ & lower bound $c_\rho$ & observed & heuristic & upper bound\\
+\midrule
+8  & 2.5 & 0.078 & 0.572 & 0.728 & 12.1\\
+8  & 10  & 0.212 & 1.385 & 2.178 & 8.82\\
+16 & 2.5 & 0.033 & 0.226 & 0.259 & 8.07\\
+16 & 10  & 0.108 & 0.784 & 0.983 & 5.38\\
+32 & 2.5 & 0.015 & 0.096 & 0.108 & 6.34\\
+32 & 10  & 0.059 & 0.418 & 0.476 & 3.82\\
+\bottomrule
+\end{tabular}
+\end{table}
 
 \begin{figure}[h]
 \centering

@@ -425,7 +425,7 @@ exact ETC 与 smoothed ETC 之间的一致率（91%）一样高——也就是�
   这是预算规则的差别，不是"先学后做"结构的差别。
 
 **理论：** 这一节的结论已写成命题 3（[`../theory/large_horizon_limit.pdf`](../theory/large_horizon_limit.pdf) 第 5 节）：
-在同一（ex-ante）预算规则下，full bandit 的总学习成本有界（O(1)），decomposition 的至多 O(log K)，两者学习价值之比
+在同一（ex-ante）预算规则下，full bandit 的总学习成本有界（O(1)），decomposition 的恰为 log K 量级（命题 4 给出下界 c·log K：任何"固定出价探测 + 停止学习地执行"的设计都不能更好），两者学习价值之比
 ≥ 1 − C(1+log K)/(KΛ(ρ)) → 1，分配收敛到同一极限；Λ(ρ) 在小预算处为 O(ρ^{3/2})、大预算处约为 Var(√θ)/ρ，所以两端收敛最慢。
 数值上 full bandit 的总学习成本在 K=50–400 间几乎不变（r=16、ρ=2.5 时恒为 0.10 次曝光），decomposition 的每翻倍 K 增加约 0.15。
 
