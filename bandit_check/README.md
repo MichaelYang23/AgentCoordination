@@ -552,6 +552,8 @@ cd bandit_check
 ../.venv/bin/python region_map.py          # full bandit（DP）与 decomposition 的一致区域（需扫描缓存，~10 s）
 ../.venv/bin/python dp_convergence.py      # 随 K 收敛的图（需上面两步的缓存）
 ../.venv/bin/python n_teams.py             # 命题 5：n 个团队与边际学习者（~1 min）
+../.venv/bin/python budget_rules_limit.py  # 三种预算规则下的极限对比（~1 min）
+../.venv/bin/python decision_stakes.py     # 分配决策的收益量级（需扫描与 K=200/400 的缓存，~1 min）
 ```
 
 | 文件 | 内容 |
@@ -563,6 +565,8 @@ cd bandit_check
 | `results/baseline_*` | 基准参数：日志、shift、`baseline_summary.json`（溢价、边界、再分配价值） |
 | `results/sweep_summary.txt`, `results/sweep_regime_agreement.csv` | 扫描结果：按区间、按参数的一致率；每个配置 × 价值比 × agent × 区间一行 |
 | `results/*.png` | 本文所有图 |
+| `budget_rules_limit.py` | 三种预算规则（论文规则、ex-ante、硬预算）下大 K 极限的学习溢价与两团队分配（`results/budget_rules_limit.txt`） |
+| `decision_stakes.py` | 分配决策的收益量级：考虑学习的分法比不考虑多多少；用分解模型做规划而团队实际是 full bandit 时损失多少（`results/decision_stakes.txt`） |
 | `n_teams.py` | 命题 5：n 个团队（三团队 3:2:1 的极限与 K=100 模型）、符号规则的稳健性检验（`results/fig_n_teams.png`、`results/n_teams_summary.txt`） |
 | `run_dp_largeK.py`, `dp_convergence.py` | 补算 K=200/400 的 full bandit 与 decomposition；随 K 的收敛图（`results/fig_dp_convergence.png`） |
 | `region_map.py` | full bandit（DP）与 decomposition 的一致区域图和汇总（`results/fig_region_map.png`、`results/region_map_summary.txt`） |

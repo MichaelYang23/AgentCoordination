@@ -1,0 +1,28 @@
+Ex-ante budget rule, teams = full bandit (DP), v1/v2 = 2, pi0 = 0.5; maxima over T in [0.4K, 10K]
+ r    K | premium, % of W | gain: learning-aware vs learning-blind split, % of value | loss from planning with the decomposition: % of value (% of the gain from learning)
+ 8    50 |  2.41 |  0.009 |  0.033 (2.1)
+ 8   100 |  2.60 |  0.004 |  0.019 (1.1)
+ 8   200 |  2.70 |  0.003 |  0.010 (0.9)
+ 8   400 |  2.75 |  0.002 |  0.007 (0.6)
+16    50 |  4.24 |  0.015 |  0.028 (1.9)
+16   100 |  4.44 |  0.008 |  0.020 (1.2)
+16   200 |  4.54 |  0.007 |  0.013 (0.8)
+16   400 |  4.59 |  0.007 |  0.010 (0.7)
+32    50 |  6.25 |  0.015 |  0.035 (2.1)
+32   100 |  6.45 |  0.014 |  0.026 (1.2)
+32   200 |  6.55 |  0.014 |  0.017 (1.0)
+32   400 |  6.60 |  0.014 |  0.010 (0.7)
+
+K = 100 baseline: budget from which learning pays, and the peak premium
+  etc_smooth premium > 0.001 from B =  59.1 ; peak 2.16 at B =  256 (3.5% of W)
+  etc_exact  premium > 0.001 from B =  55.9 ; peak 1.88 at B =  224 (3.1% of W)
+  ce_A       premium > 0.001 from B =  60.4 ; peak 2.29 at B =  348 (3.5% of W)
+  etc_B      premium > 0.001 from B =  32.3 ; peak 2.08 at B =  347 (3.2% of W)
+  opt_B      premium > 0.001 from B =   0.7 ; peak 3.13 at B =  633 (4.3% of W)
+
+Paper's rule, K = 100, teams = the paper's smoothed ETC
+  T =  100  shift  +4.3  learning-aware split adds 0.127% of value ; learning itself adds 0.70%
+  T =  150  shift  +4.9  learning-aware split adds 0.065% of value ; learning itself adds 1.83%
+  T =  250  shift  -5.7  learning-aware split adds 0.031% of value ; learning itself adds 2.92%
+  T =  400  shift  -9.5  learning-aware split adds 0.030% of value ; learning itself adds 3.30%
+  T = 1000  shift -13.4  learning-aware split adds 0.007% of value ; learning itself adds 2.29%
