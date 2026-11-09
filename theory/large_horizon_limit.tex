@@ -22,7 +22,7 @@
 \DeclareMathOperator{\Var}{Var}
 
 \title{The Learning Premium in the Large-Horizon Limit\\[3pt]
-\large Propositions 1--3 (draft for \emph{Orchestrating Agent Teams})}
+\large Propositions 1--5 (draft for \emph{Orchestrating Agent Teams})}
 \author{Working draft}
 \date{\today}
 
@@ -46,6 +46,10 @@ state from the start: the full bandit's total learning cost stays bounded, the d
 (Proposition~\ref{prop:lower} shows this order cannot be improved by any probe-then-commit design), so the ratio of
 their learning premia tends to one and their allocations converge to the same limit.
 Under the paper's budget rule the decomposition keeps a gap that grows with the budget.
+With $n$ teams (Proposition~\ref{prop:nteams}), a single number---the ratio of the budget's shadow prices with and
+without learning---decides which teams gain budget, without any concavity condition on the learning value: a team
+gains exactly when its marginal-value ratio exceeds that number. Learning takes budget from teams that do not learn,
+balances it among those that do, and favours the \emph{marginal learner}, the lowest-value team that learns.
 \end{abstract}
 
 \section{Setup and notation}\label{sec:setup}
@@ -722,6 +726,136 @@ $r$ & $\rho$ & lower bound $c_\rho$ & observed & heuristic & upper bound\\
 senior budget ($v_1/v_2=2$). Blue: decomposition, $K=50,100,200,400$ (light to dark); orange: full bandit; dashed: the
 limit $K\to\infty$ of Proposition~\ref{prop:common}.}
 \label{fig:common}
+\end{figure}
+
+\section{Proposition 5: $n$ teams and the marginal learner}\label{sec:nteams}
+
+\paragraph{Setup.} There are $n$ teams with values $v_1>v_2>\dots>v_n>0$ in the same market, and a total budget
+$T=tK$ split as $a_i=\alpha_iK$. As in Corollary~\ref{cor:alloc}, the per-team values $V_K(\alpha K)/K$ converge uniformly
+on compact sets, so in the large-$K$ limit the planner solves
+\[
+\max\Bigl\{\sum_iv_i\,L(\alpha_i):\ \alpha\ge0,\ \textstyle\sum_i\alpha_i=t\Bigr\}
+\qquad\text{against}\qquad
+\max\Bigl\{\sum_iv_i\,g_0(\alpha_i):\ \alpha\ge0,\ \textstyle\sum_i\alpha_i=t\Bigr\},
+\]
+with $g_0:=g(\pi_0;\cdot)$ and limit points of the finite-$K$ allocations solving the limit problems. The learning value has
+a \emph{mode} structure: $L=g_0+\Psi=\max_{\tau\in\mathbb N\cup\{\infty\}}L_\tau$ with $L_\tau(\rho):=\E[g(\pi_\tau;\rho)]$, a
+mixture of concave functions and hence concave, and $L_0=g_0$. At the baseline only $\tau=0$ and $\tau=\infty$ are ever
+active, so $L=\max\{g_0,G\}$ with $G:=\pi_0g_H+(1-\pi_0)g_L$, and $G-g_0=\VPI$ crosses zero once, from below, at $\rho_1$
+(Proposition~\ref{prop:shape} gives the signs near $0$ and $\infty$; the single crossing is numerical). A team is a
+\emph{learner} if its budget lies above $\rho_1$; the \emph{marginal learner} is the learner with the lowest value.
+
+\paragraph{Assumption (modes).} $L=\max_{m\in M}L_m$ for a finite set $M$ containing $m_0$ with $L_{m_0}=g_0$, and every
+$L_m$ is strictly increasing, strictly concave and continuously differentiable on $(0,\infty)$ with $L_m'(0+)=\infty$.
+Write $\lambda_E$ and $\lambda_L$ for the multipliers of the budget constraint in the two problems.
+
+\begin{proposition}[$n$ teams]\label{prop:nteams}
+Under the assumption, let $\alpha^E$ solve the benchmark problem and $\alpha^L$ the learning problem.
+\begin{enumerate}
+\item[(a)] \emph{Order.} $\alpha^E_1>\dots>\alpha^E_n>0$, and every optimal $\alpha^L$ has $\alpha^L_1\ge\dots\ge\alpha^L_n>0$. With two
+modes and a single crossing at $\rho_1$, the learners are the $k$ highest-value teams for some $k$.
+\item[(b)] \emph{No team at a kink; entry by jumps.} No $\alpha^L_i$ is a kink of $L$. With two modes, every selection
+$t\mapsto\alpha^L(t)$ moves each team over $\rho_1$ by a jump.
+\item[(c)] \emph{Who gains.} Let $m_i$ be an active mode of team $i$ at $\alpha^L_i$, $R_i:=L'_{m_i}(\alpha^E_i)/g_0'(\alpha^E_i)$ and
+$\kappa:=\lambda_L/\lambda_E$. Then for every team
+\[
+\alpha^L_i>\alpha^E_i\iff R_i>\kappa,\qquad \alpha^L_i<\alpha^E_i\iff R_i<\kappa,
+\qquad\text{and}\qquad \min_iR_i\le\kappa\le\max_iR_i .
+\]
+In particular all non-learners ($R_i=1$) move in the same direction, the team with the largest ratio gains and the
+team with the smallest ratio loses. For $n=2$ this is Theorem~1 of the paper without its concavity condition: the
+senior team gains if and only if $R_1>R_2$.
+\item[(d)] \emph{Skewing, balancing and the marginal learner.} With two modes let $R(\rho):=G'(\rho)/g_0'(\rho)$.
+(i) If every learner has $R_i>1$, then $\kappa>1$ and every non-learner loses budget. (ii) If $R$ is nonincreasing on an
+interval containing the benchmark budgets of the learners, then whenever a learner gains, every lower-value learner
+gains: learning balances the split among learners. The marginal learner then has the largest ratio among learners,
+and if that ratio is at least $1$ it does not lose budget. Under (i) and (ii) together it takes budget both from the
+non-learners and from every higher-value learner with $R_i<\kappa$.
+\end{enumerate}
+\end{proposition}
+
+\begin{proof}
+\emph{(a)} If $v_i>v_j$ and $\alpha_i<\alpha_j$, swapping the two budgets changes the objective by
+$(v_i-v_j)[L(\alpha_j)-L(\alpha_i)]>0$, since $L$ is strictly increasing; so no optimum has $\alpha_i<\alpha_j$. Since $L'(0+)=\infty$,
+every team gets a positive budget. In the benchmark the first-order conditions $v_ig_0'(\alpha^E_i)=\lambda_E$ and strict
+concavity give the strict order. With two modes, $L>g_0$ exactly above $\rho_1$, so the learners form an upper set of
+the ordered budgets.
+
+\emph{(b)} $L$ is the maximum of differentiable functions, so at a kink the mode that is active to the right overtakes
+the one active to the left: $L'_+>L'_-$, a convex kink. Suppose $\alpha^L_i$ is a kink and $j\ne i$. Moving $\varepsilon$ of budget
+between the two teams in either direction must not help, so $v_iL'_+(\alpha^L_i)\le v_jL'_-(\alpha^L_j)$ and
+$v_jL'_+(\alpha^L_j)\le v_iL'_-(\alpha^L_i)$. Multiplying gives $L'_+(\alpha^L_i)L'_+(\alpha^L_j)\le L'_-(\alpha^L_i)L'_-(\alpha^L_j)$, which is
+impossible because $L'_+\ge L'_->0$ everywhere with strict inequality at $\alpha^L_i$. For the jumps: if $t\le\rho_1$ every
+budget is below $\rho_1$; as $t\to\infty$ the multiplier tends to zero and every budget to infinity; a continuous
+selection would therefore place some team at $\rho_1$ for some $t$.
+
+\emph{(c)} By (b), $L$ is differentiable at each $\alpha^L_i$ with $L'(\alpha^L_i)=L'_{m_i}(\alpha^L_i)$, and budgets are interior, so
+$v_iL'_{m_i}(\alpha^L_i)=\lambda_L$ and $v_ig_0'(\alpha^E_i)=\lambda_E$. Hence $L'_{m_i}(\alpha^L_i)=\kappa\,\lambda_E/v_i$ and
+$L'_{m_i}(\alpha^E_i)=R_i\,\lambda_E/v_i$. Because $L'_{m_i}$ is strictly decreasing, $\alpha^L_i>\alpha^E_i$ if and only if
+$L'_{m_i}(\alpha^L_i)<L'_{m_i}(\alpha^E_i)$, that is $\kappa<R_i$; similarly for the reverse inequality. Both allocations sum to
+$t$, so some team weakly loses and some weakly gains, which gives $\min_iR_i\le\kappa\le\max_iR_i$. For $n=2$, $\kappa$ lies
+between $R_1$ and $R_2$, so team~1 gains if and only if $R_1>R_2$.
+
+\emph{(d)} (i) If $\kappa\le1$, every learner ($R_i>1\ge\kappa$) would gain strictly and every non-learner ($R_i=1\ge\kappa$)
+weakly, contradicting $\sum_i\alpha^L_i=\sum_i\alpha^E_i$. (ii) Learners with higher value have larger benchmark budgets by (a),
+hence weakly smaller ratios; apply (c). The marginal learner's ratio is then the largest among learners and, if it is at
+least $1$, the largest overall, so $\kappa\le R_k$.
+\end{proof}
+
+\begin{remark}[Interpretation]
+Learning moves budget towards the teams whose budgets sit where an extra dollar of budget raises the learning team's
+value most relative to the benchmark. At the baseline, $R$ exceeds one for $\rho\in(0.065,3.24)$, peaks at $\rho=0.64$ (just
+above $\rho_1=0.46$, where the jump of Proposition~\ref{prop:shape}(d) occurs) and falls below one at large budgets. With
+two teams this gives the paper's two regimes: only the senior learns (it gains), or both learn (the junior, closer to
+the threshold, gains). With three or more teams both happen at once---learning widens the gap between learners and
+non-learners and narrows it among learners---and each time a new team crosses the threshold it becomes the main
+beneficiary. The prediction for a manager is to fund the marginal learner.
+\end{remark}
+
+\subsection{Numerical illustration}
+
+Table~\ref{tab:nteams} and Figure~\ref{fig:nteams} use three teams with values $3:2:1$ at the baseline. In the limit the
+problem is solved exactly by enumerating the $2^n$ mode assignments, each a strictly concave problem; at $K=100$ the
+paper's smoothed ETC is optimised exactly on a $0.5$ budget grid. The code is in \texttt{bandit\_check/n\_teams.py}.
+The sign rule of (c) holds at all $971\times3$ team-budgets of the main run and at all $9{,}376$ team-budgets of a robustness run
+($t\in[0.3,12]$ in steps of $0.02$; values $(3,2,1)$, $(4,2,1)$, $(2,1.5,1)$, $(1.5,1.2,1)$ and four teams $(4,3,2,1)$).
+Whenever there are non-learners, they all lose budget, as (d)(i) predicts; with two or more learners some
+higher-value learner loses at $85$--$96\%$ of budgets. The marginal learner never loses budget for $(3,2,1)$,
+$(4,2,1)$, $(2,1.5,1)$ and $(4,3,2,1)$. With values as close as $(1.5,1.2,1)$ it loses at $10$ of $548$ budgets, by at
+most $0.3\%$ of its budget, when all benchmark budgets lie on the short rising part of $R$ below its peak, where
+(d)(ii) does not apply.
+
+\begin{table}[h]
+\centering\small
+\caption{Three teams, values $3:2:1$. Budgets without learning $\to$ with learning, and the shift.}
+\label{tab:nteams}
+\begin{tabular}{@{}llll@{}}
+\toprule
+& learners & no learning $\to$ learning & shift\\
+\midrule
+limit, $t=1$ & team 1 & $(0.519,0.333,0.148)\to(0.559,0.306,0.135)$ & $(+0.040,-0.027,-0.013)$\\
+limit, $t=2$ & teams 1--2 & $(1.023,0.664,0.312)\to(1.040,0.686,0.274)$ & $(+0.017,+0.022,-0.038)$\\
+limit, $t=4$ & teams 1--3 & $(2.038,1.327,0.635)\to(1.979,1.350,0.671)$ & $(-0.058,+0.023,+0.036)$\\
+\midrule
+$K=100$, $T=150$ & team 1 & $(77,50,23)\to(84,45,21)$ & $(+7,-5,-2)$\\
+$K=100$, $T=300$ & teams 1--2 & $(153,99.5,47.5)\to(152,105,43)$ & $(-1,+5.5,-4.5)$\\
+$K=100$, $T=500$ & teams 1--3 & $(254.5,166,79.5)\to(242,168.5,89.5)$ & $(-12.5,+2.5,+10)$\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+In the limit the ratios at $t=2$ are $R=(1.142,1.158,1)$ with $\kappa=1.123$, so both learners gain and the non-learner
+loses; at $t=4$ they are $(1.066,1.119,1.158)$ with $\kappa=1.100$, so the senior team loses and the two others gain. At
+$K=100$ the learning premium falls faster with the budget than in the limit, $R$ is steeper, and at $T=300$ the marginal
+learner (team~2) takes budget from both the senior learner and the non-learner.
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=\textwidth]{figs/fig_n_teams.png}
+\caption{Budget shift of each of three teams (values $3:2:1$) when the teams can learn. Left: the limit
+$K\to\infty$, with the number of learners shaded; budgets jump when a team crosses the threshold
+(Proposition~\ref{prop:nteams}(b)). Right: the paper's model at $K=100$.}
+\label{fig:nteams}
 \end{figure}
 
 \end{document}

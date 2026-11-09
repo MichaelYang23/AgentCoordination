@@ -1,0 +1,25 @@
+n = 3 teams, v = (3, 2, 1). Limit K -> inf, paper's budget rule, baseline (thL=0.5, thH=8, pi0=0.5); learning threshold rho1 = 0.457 per period
+check 5(c) sign rule on 971 t-values x 3 teams: 0 violations
+modes agree with 'budget above rho1' at every t; learners always the top-k teams: True
+  t=0.60  learners (0, 0, 0)  no learning [0.317 0.199 0.084] -> learning [0.317 0.199 0.084]  shift [0. 0. 0.]  R [1. 1. 1.]  kappa 1.0000
+  t=1.00  learners (1, 0, 0)  no learning [0.519 0.333 0.148] -> learning [0.559 0.306 0.135]  shift [ 0.04  -0.027 -0.013]  R [1.154 1.    1.   ]  kappa 1.0787
+  t=1.50  learners (1, 1, 0)  no learning [0.77  0.499 0.231] -> learning [0.789 0.511 0.2  ]  shift [ 0.019  0.012 -0.03 ]  R [1.155 1.153 1.   ]  kappa 1.1291
+  t=2.00  learners (1, 1, 0)  no learning [1.023 0.664 0.312] -> learning [1.04  0.686 0.274]  shift [ 0.017  0.022 -0.038]  R [1.142 1.158 1.   ]  kappa 1.1232
+  t=3.00  learners (1, 1, 1)  no learning [1.53  0.995 0.474] -> learning [1.502 1.012 0.487]  shift [-0.029  0.016  0.012]  R [1.103 1.144 1.151]  kappa 1.1252
+  t=4.00  learners (1, 1, 1)  no learning [2.038 1.327 0.635] -> learning [1.979 1.35  0.671]  shift [-0.058  0.023  0.036]  R [1.066 1.119 1.158]  kappa 1.0996
+  t=6.00  learners (1, 1, 1)  no learning [3.043 1.998 0.959] -> learning [2.93  2.026 1.044]  shift [-0.113  0.028  0.085]  R [1.009 1.068 1.146]  kappa 1.0524
+  1 learner(s) for t in [0.85, 1.40]
+  2 learner(s) for t in [1.41, 2.99]
+  3 learner(s) for t in [3.00, 10.00]
+
+Finite K = 100, paper's smoothed ETC (slides), exact optimum on a 0.5 grid:
+  T=150  no learning [77. 50. 23.] -> learning [84. 45. 21.]  shift [ 7. -5. -2.]
+  T=300  no learning [153.   99.5  47.5] -> learning [152. 105.  43.]  shift [-1.   5.5 -4.5]
+  T=500  no learning [254.5 166.   79.5] -> learning [242.  168.5  89.5]  shift [-12.5   2.5  10. ]
+
+Robustness (limit): sign-rule violations; does the marginal learner ever lose budget?; share of t with non-learners losing (kappa > 1) / with some higher learner losing
+  v=(3.0, 2.0, 1.0): violations 0; marginal learner loses at 0 of 558 t with learners; non-learners lose 19%; a higher learner loses 81%
+  v=(4.0, 2.0, 1.0): violations 0; marginal learner loses at 0 of 564 t with learners; non-learners lose 24%; a higher learner loses 84%
+  v=(2.0, 1.5, 1.0): violations 0; marginal learner loses at 0 of 553 t with learners; non-learners lose 12%; a higher learner loses 88%
+  v=(1.5, 1.2, 1.0): violations 0; marginal learner loses at 10 of 548 t with learners; non-learners lose 7%; a higher learner loses 93%
+  v=(4.0, 3.0, 2.0, 1.0): violations 0; marginal learner loses at 0 of 549 t with learners; non-learners lose 36%; a higher learner loses 82%
