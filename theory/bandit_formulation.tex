@@ -1,0 +1,165 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{booktabs}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\qbar}{\bar q}
+\newcommand{\ind}[1]{\mathbf{1}_{#1}}
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\title{The Bidding Problem as a Bandit: Formulation}
+\author{Working note}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\noindent This note writes the $K$-period bidding problem as one optimization problem, identifies its state, and
+states the budget constraint in the two forms that matter. The no-learning benchmark, the decomposition
+(learn, then execute) and the full bandit are the \emph{same} problem with three nested sets of admissible policies.
+
+\section{Primitives}
+
+There are $K$ auctions, $t=1,\dots,K$. The market state $\theta\in\{\theta_L,\theta_H\}$, $0<\theta_L<\theta_H$, is drawn
+once before the first auction with $\Pr(\theta=\theta_H)=\pi_0$ and is never observed; $r:=\theta_H/\theta_L$. In auction
+$t$ the team bids $b_t\ge0$ and observes $x_t\in\{0,1\}$ (win or loss), with
+\[
+\Pr(x_t=1\mid\theta,b_t)=q_\theta(b_t):=\frac{b_t}{b_t+\theta},
+\]
+independently across auctions given $\theta$ and the bids. A win yields one impression and costs $b_t$; a loss costs
+nothing. The history after auction $t$ is $H_t=(b_1,x_1,\dots,b_t,x_t)$, with $H_0=\emptyset$, and
+$w_t:=\sum_{s\le t}x_s$ is the number of wins so far.
+
+\section{The problem}
+
+The decision variable is not a list of $K$ numbers. It is a \emph{policy} $\beta=(\beta_1,\dots,\beta_K)$ that maps what
+has been observed to the next bid, $b_t=\beta_t(H_{t-1})$. With a budget $B$ that has to hold in expectation:
+\begin{equation}\tag{P}\label{eq:P}
+V(B)=\max_{\beta}\ \E^{\beta}\Bigl[\sum_{t=1}^{K}x_t\Bigr]
+\qquad\text{subject to}\qquad
+\E^{\beta}\Bigl[\sum_{t=1}^{K}b_t\,x_t\Bigr]\le B,\qquad b_t=\beta_t(H_{t-1})\ge0 .
+\end{equation}
+The expectation $\E^\beta$ is taken before the campaign starts: over the state $\theta\sim\pi_0$, the auction
+outcomes, and any randomisation in the policy.
+
+\paragraph{Equivalent form.} Let $\pi_t:=\Pr(\theta=\theta_H\mid H_t)$ be the belief and
+$\qbar(\pi,b):=\pi q_{\theta_H}(b)+(1-\pi)q_{\theta_L}(b)$ the predictive win probability. Since
+$\E[x_t\mid H_{t-1}]=\qbar(\pi_{t-1},b_t)$,
+\[
+V(B)=\max_\beta\ \E^\beta\Bigl[\sum_{t=1}^K\qbar(\pi_{t-1},b_t)\Bigr]
+\quad\text{s.t.}\quad \E^\beta\Bigl[\sum_{t=1}^Kb_t\,\qbar(\pi_{t-1},b_t)\Bigr]\le B .
+\]
+
+\section{The state: the belief, not the win count}
+
+\paragraph{Bayes' rule.} In log-odds $\ell_t:=\log\frac{\pi_t}{1-\pi_t}$, the likelihood ratio of a win at bid $b$ is
+$q_{\theta_H}(b)/q_{\theta_L}(b)=\frac{b+\theta_L}{b+\theta_H}$ and that of a loss is $r\cdot\frac{b+\theta_L}{b+\theta_H}$. Hence, with
+$\phi(b):=\log\frac{b+\theta_L}{b+\theta_H}\in(-\log r,\,0)$,
+\begin{equation}\label{eq:update}
+\ell_t=\ell_{t-1}+\phi(b_t)+(1-x_t)\log r,
+\qquad\text{so}\qquad
+\boxed{\ \ell_t=\ell_0+\sum_{s\le t}\phi(b_s)+(t-w_t)\log r\ }
+\end{equation}
+Three things follow from \eqref{eq:update}.
+\begin{enumerate}
+\item \emph{The outcomes enter only through the number of wins $w_t$; the bids enter through $\sum_s\phi(b_s)$,
+whether they won or not.} A win moves the log-odds by $\phi(b)<0$, a loss by $\phi(b)+\log r>0$; the gap between
+the two is always $\log r$. A low bid makes a win informative and a loss uninformative; a high bid does the opposite.
+\item \emph{$(t,w_t)$ is a sufficient statistic only if the bids so far are the same on every history.} That is the
+case in a probing phase at a fixed bid: with $b_s\equiv b^I=\sqrt{\theta_L\theta_H}$, $\phi(b^I)=-\tfrac12\log r$ and
+\eqref{eq:update} gives the paper's lemma, $\ell_\tau=\ell_0+\tfrac12(\tau-2w_\tau)\log r$.
+\item \emph{In the full bandit the bids depend on past outcomes, so two histories with the same $(t,w_t)$ carry
+different beliefs.} Example ($\theta_L=\tfrac12$, $\theta_H=8$, $\pi_0=\tfrac12$): bid $2$ and win, then bid $1$ and lose, gives
+$\pi_2=0.40$; bid $2$ and lose, then bid $4$ and win, gives $\pi_2=0.60$. Both have $t=2$, $w_2=1$.
+\end{enumerate}
+
+\paragraph{Sufficiency of the belief.} For any future bids, the law of future outcomes given $H_t$ depends on $H_t$
+only through $\pi_t$: $\Pr(x_{t+1}=1\mid H_t,b_{t+1})=\qbar(\pi_t,b_{t+1})$, and $\pi_{t+1}$ is a function of
+$(\pi_t,b_{t+1},x_{t+1})$ by \eqref{eq:update}. Past wins are sunk. So the information state is $(t,\pi_t)$. Whether the
+remaining budget is also a state depends on the constraint.
+
+\section{The constraint decides whether the remaining budget is a state}
+
+\subsection{Expected budget (ex ante): state $(t,\pi)$}
+
+Problem \eqref{eq:P} has a single constraint, so it has a single multiplier $\lambda\ge0$, the price of a dollar in
+impressions. For fixed $\lambda$ the problem is an unconstrained dynamic program in which a win at bid $b$ is worth
+$1-\lambda b$:
+\begin{equation}\label{eq:dp}
+J^\lambda_t(\pi)=\max_{b\ge0}\Bigl\{\qbar(\pi,b)\bigl[1-\lambda b+J^\lambda_{t+1}\bigl(\pi^{+}(\pi,b)\bigr)\bigr]
++\bigl(1-\qbar(\pi,b)\bigr)J^\lambda_{t+1}\bigl(\pi^{-}(\pi,b)\bigr)\Bigr\},\qquad J^\lambda_{K+1}\equiv0,
+\end{equation}
+where $\pi^{+}$ and $\pi^{-}$ are the beliefs after a win and after a loss. Then
+\[
+V(B)=\min_{\lambda\ge0}\bigl\{J^\lambda_1(\pi_0)+\lambda B\bigr\},
+\]
+and the optimal policy is $b_t=\beta^{\lambda^*}_t(\pi_{t-1})$ at the multiplier whose expected spend equals $B$ (if
+the spend jumps at $\lambda^*$, randomise between the two policies; with this randomisation there is no duality gap).
+\emph{The remaining budget is not a state:} how much this particular path has spent does not restrict what it may do
+next; only the average over paths is constrained, and $\lambda$ carries that.
+
+\paragraph{How to read \eqref{eq:dp}.} For every fixed policy the Lagrangian value is linear in the prior, so
+$J^\lambda_t$, a maximum of linear functions, is convex in $\pi$. The belief is a martingale, $\E[\pi'\mid\pi,b]=\pi$, so
+\[
+\underbrace{\qbar(\pi,b)\,(1-\lambda b)}_{\text{immediate value of the bid}}
+\;+\;J^\lambda_{t+1}(\pi)\;+\;
+\underbrace{\E\bigl[J^\lambda_{t+1}(\pi')\mid\pi,b\bigr]-J^\lambda_{t+1}(\pi)}_{\text{information value of the bid}\ \ge\,0}
+\]
+is what the bid maximises. A \emph{myopic} bidder maximises the first term only; the bandit adds the third. Every
+bid $b>0$ is informative here ($q_{\theta_L}(b)\ne q_{\theta_H}(b)$), so the myopic bidder also learns.
+
+\subsection{Hard budget (every path): state $(t,\pi,R)$}
+
+If the realised spend may never exceed $B$,
+\[
+\sum_{t=1}^Kb_t\,x_t\le B\ \ \text{on every path}
+\quad\Longleftrightarrow\quad
+b_t\le R_{t-1},\qquad R_t=R_{t-1}-b_t\,x_t,\quad R_0=B,
+\]
+the remaining budget $R$ becomes a state and the bid is capped by it:
+\begin{equation}\label{eq:hard}
+V_t(\pi,R)=\max_{0\le b\le R}\Bigl\{\qbar(\pi,b)\bigl[1+V_{t+1}\bigl(\pi^{+}(\pi,b),R-b\bigr)\bigr]
++\bigl(1-\qbar(\pi,b)\bigr)V_{t+1}\bigl(\pi^{-}(\pi,b),R\bigr)\Bigr\},\qquad V_{K+1}\equiv0,
+\end{equation}
+with value $V_1(\pi_0,B)\le V(B)$, because every policy that respects the hard budget also respects the expected one.
+
+\begin{table}[h]
+\centering\small
+\begin{tabular}{@{}lll@{}}
+\toprule
+Constraint & Formal statement & State\\
+\midrule
+Expected budget (ex ante) & $\E^\beta[\sum_tb_tx_t]\le B$ & $(t,\pi_t)$, plus one multiplier $\lambda$\\
+Hard budget & $\sum_tb_tx_t\le B$ on every path & $(t,\pi_t,R_t)$\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Three policy classes in the same problem}
+
+Keep the objective and the constraint of \eqref{eq:P} and restrict the admissible policies.
+\begin{description}
+\item[No learning, $\Pi_0$.] The bids are fixed in advance and do not react to outcomes. By concavity the best such
+plan is a constant bid $b$ with $K\,b\,\qbar(\pi_0,b)=B$, which gives the paper's benchmark $W(B)=K\,\qbar(\pi_0,b)$.
+\item[Decomposition, $\Pi_D$.] Bid $b^I$ in auctions $1,\dots,\tau$; then one bid $b(w_\tau)$ in auctions
+$\tau+1,\dots,K$. Here the win count is sufficient (item 2 above), and the problem is
+\begin{align*}
+V^{D}(B)=\max_{\tau,\;b(\cdot)}\ &\E\Bigl[w_\tau+(K-\tau)\,\qbar\bigl(\pi_\tau(w_\tau),b(w_\tau)\bigr)\Bigr]\\
+\text{subject to}\ \ &\E\Bigl[w_\tau b^I+(K-\tau)\,b(w_\tau)\,\qbar\bigl(\pi_\tau(w_\tau),b(w_\tau)\bigr)\Bigr]\le B .
+\end{align*}
+\item[Full bandit, $\Pi_{FB}$.] All policies $b_t=\beta_t(H_{t-1})$; this is \eqref{eq:P}, solved by \eqref{eq:dp}.
+\end{description}
+Since $\Pi_0\subset\Pi_D\subset\Pi_{FB}$, $W(B)\le V^{D}(B)\le V(B)$ for every $B$ and $K$.
+
+\begin{remark}[The paper's constraint is not the single constraint of \eqref{eq:P}]
+The manuscript requires the exploitation agent to spend its own wallet in expectation after \emph{every} probe
+outcome: $(K-\tau)\,b(w)\,\qbar(\pi_\tau(w),b(w))=B-w\,b^I$ for each $w=0,\dots,\tau$. These $\tau+1$ constraints imply
+the single expected-budget constraint (average them over $w$) but are stricter, so the manuscript's value is at most
+$V^D(B)$. The benchmark $W$, in contrast, faces only the single constraint. To compare the decomposition with the
+full bandit of \eqref{eq:P}, both must be given the same constraint.
+\end{remark}
+
+\end{document}
