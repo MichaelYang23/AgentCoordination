@@ -1,0 +1,17 @@
+rate per doubling predicted: KL 0.83, Chernoff 3.11
+B/K = 1.0
+  K=  100 exact tau*= 8  averaged tau*=6.07
+  K=  200 exact tau*=11  averaged tau*=7.03
+  K=  400 exact tau*=14  averaged tau*=7.93
+  K=  800 exact tau*=17  averaged tau*=8.80
+  K= 1600 exact tau*=20  averaged tau*=9.66
+  K= 3200 exact tau*=23  averaged tau*=10.50
+  K= 6400 exact tau*=26  averaged tau*=11.34
+B/K = 2.0
+  K=  100 exact tau*= 9  averaged tau*=5.58
+  K=  200 exact tau*=11  averaged tau*=6.49
+  K=  400 exact tau*=14  averaged tau*=7.36
+  K=  800 exact tau*=17  averaged tau*=8.22
+  K= 1600 exact tau*=20  averaged tau*=9.07
+  K= 3200 exact tau*=23  averaged tau*=9.91
+  K= 6400 exact tau*=25  averaged tau*=10.75

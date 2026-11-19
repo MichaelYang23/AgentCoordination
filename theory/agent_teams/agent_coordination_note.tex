@@ -1,0 +1,197 @@
+\documentclass[11pt]{article}
+\usepackage{amsmath,amssymb,amsthm,booktabs,geometry,url}
+\geometry{margin=1in}
+\newtheorem{assumption}{Assumption}
+
+\title{AI Agent Coordination}
+\author{Michael Yang}
+\date{November 2026}
+
+\begin{document}
+
+\maketitle
+
+\section{Introduction}
+
+Firms increasingly run teams of AI agents instead of a single assistant. A lead agent, which we call the orchestrator, splits a job into tasks, hands them to teams of agents that work in parallel, and collects the results.\footnote{Examples are Anthropic's multi-agent research system (\url{https://www.anthropic.com/engineering/multi-agent-research-system}), agent teams in Claude Code (\url{https://code.claude.com/docs/en/agent-teams}), and Airbnb's migration of about 3{,}500 test files with LLM agents (\url{https://airbnb.tech/?p=366}).} Two features of these deployments motivate this project.
+
+The first is that tokens are scarce and have to be divided. Every agent has its own context, so a multi-agent system uses many times the tokens of a single agent; Anthropic reports about fifteen times the tokens of a chat interaction for its research system. Firms respond with limits on token use by team and by task.\footnote{See \url{https://stlpartners.com/articles/ai/ai-token-costs-enterprise-ai-budgets/}.} A model generates tokens on demand until it stops, but it does so inside an envelope that is set beforehand: an effort level for the request, a cap on the tokens of a response, a budget for a whole task.\footnote{In the Claude API these are the effort parameter, \texttt{max\_tokens} and the task budget. The cap is enforced, and a response that reaches it is cut off; the task budget is a target that the model sees and paces itself against. See \url{https://platform.claude.com/docs/en/build-with-claude/effort} and \url{https://platform.claude.com/docs/en/build-with-claude/task-budgets}.} In Anthropic's system the lead agent decides how much effort each subagent receives before it starts and cannot steer it while it runs. The token budgets in this note are envelopes of this kind, not counts of the tokens a model happens to generate.
+
+The second is that whether a task was done well is decided by someone else. A code change counts when the owner of the repository merges it, a report when the client accepts it, a claim decision when it passes audit. We call this party the evaluator. The evaluator is outside the control of the team and of the orchestrator, and the team does not know in advance how demanding it is. A team can check some things for itself, such as whether its code runs and its tests pass, but acceptance depends on more than that. In a study by METR, maintainers of three open-source projects reviewed 296 pull requests that AI agents had written and that had passed the automated tests of a standard benchmark; they would not have merged about half of them.\footnote{METR, Many SWE-bench-Passing PRs Would Not Be Merged into Main, March 2026, \url{https://metr.org/notes/2026-03-10-many-swe-bench-passing-prs-would-not-be-merged-into-main/}.} Meeting one's own checks is not the same as meeting the evaluator's standard, and the team finds out about the latter only from the evaluator's verdicts. Evaluation is also slow and costly. In a recent study of agents in production, about three quarters rely mainly on human evaluation.\footnote{Measuring Agents in Production, arXiv:2512.04123.} Verdicts therefore arrive after the work is delivered, unless the team pays for an early look.
+
+Together these features create a trade-off inside each team. A team that knew the evaluator's standard would spend its tokens differently. Under a lenient standard it pays to work on the hard tasks as well; under a strict standard tokens are better concentrated on the tasks that can still be passed. The team can find out by having a few tasks evaluated early, but this uses tokens that could have gone into the work. Practitioners already proceed in this way. In Airbnb's migration the engineers first tuned their approach on a small sample of files, then ran the full set, and left the hardest few percent to manual work.
+
+It is worth being precise about what the team learns, because learning has other meanings for AI agents. The team does not become better at its tasks, and it does not learn how difficult the tasks are, which it can see. It learns one feature of its environment, the standard of its evaluator, from pass or fail verdicts on its own work. The information is useful because all tasks of a team face the same evaluator, and it changes one decision: how to divide tokens between easy and hard tasks.
+
+Model providers already offer controls on how many tokens a request may use: an effort level in the Claude API, a reasoning effort in the OpenAI API, a thinking level or a thinking budget in the Gemini API.\footnote{See \url{https://platform.openai.com/docs/guides/reasoning} and \url{https://ai.google.dev/gemini-api/docs/thinking}, and the previous footnote for Claude.} Some models also adjust their effort to the apparent difficulty of a request, and a line of research allocates computation across queries according to predicted difficulty.\footnote{For example Damani et al., Learning How Hard to Think: Input-Adaptive Allocation of LM Computation, arXiv:2410.04707.} These are instruments, together with rules for setting them one request at a time. The tokens spent on a task in our model are such an instrument. What we study is the problem around it. The instrument has to be set for many tasks under one budget. The right setting depends on a standard that the team does not know. Part of the budget can be spent to learn that standard. And an orchestrator has to divide the budget across teams that each face this problem.
+
+\section{Research Questions}
+
+An orchestrator divides a budget of tokens across teams. Each team uses its tokens for two purposes: to learn the standard of its evaluator and to do its tasks. We ask three questions.
+\begin{enumerate}
+\item For a single team with a given budget, is it worth buying early evaluations, how many, and how does the answer depend on the budget?
+\item How does the value of an additional token to a team that can learn differ from its value to a team that cannot?
+\item Compared with an allocation that ignores learning, should the orchestrator give more to the team whose output it values most, or less, and how does this depend on the total budget?
+\end{enumerate}
+The aim is a model that is simple enough to answer these questions analytically and close enough to practice to guide how token budgets are set. This note sets out the model only.
+
+\section{Setting}
+
+We describe one team; the orchestrator's problem in Section~\ref{sec:orch} puts several teams side by side. A team is treated as a single decision maker.
+
+A team must complete $K$ tasks. Every task has to be delivered, and the team chooses how many tokens of effort to put into each. Tasks differ in difficulty: $n_e$ tasks are easy, with difficulty $d_e$, and $n_h$ tasks are hard, with difficulty $d_h>d_e$, where $n_e+n_h=K$. After the tasks are delivered, an evaluator returns pass or fail for each of them. The evaluator's standard is either lenient or strict, $\theta\in\{\theta_L,\theta_H\}$ with $\theta_L<\theta_H$. A task of difficulty $d$ that receives $b$ tokens passes with probability
+\begin{equation}\label{eq:pass}
+q_\theta\!\left(\frac{b}{d}\right)=\frac{b}{b+\theta\,d},\qquad\text{where } q_\theta(x)=\frac{x}{x+\theta}.
+\end{equation}
+The three quantities in \eqref{eq:pass} belong to three different parties. The tokens $b$ are the team's choice. The difficulty $d$ is a property of the task. The standard $\theta$ is a property of the evaluator. The product $\theta d$ is the number of tokens at which the task passes with probability one half, so a stricter evaluator and a harder task both raise the tokens needed for a given chance of passing.
+
+The team has a budget of $B$ tokens and maximizes the expected number of tasks that pass.
+
+\begin{assumption}[Exogenous evaluator]\label{as:eval}
+The standard $\theta$ is fixed before the team starts and is the same for all of its tasks. Neither the team nor the orchestrator chooses it or observes it. The team's prior is $\pi_0=\Pr(\theta=\theta_H)\in(0,1)$.
+\end{assumption}
+
+\begin{assumption}[Observable difficulty]\label{as:diff}
+The team observes the difficulty of each task before working on it.
+\end{assumption}
+
+\begin{assumption}[Committed effort]\label{as:effort}
+Effort is measured in tokens. The tokens assigned to a task are used whether or not the task passes, and using them reveals nothing about $\theta$. The team's total use of tokens cannot exceed $B$.
+\end{assumption}
+
+\begin{assumption}[Diminishing returns]\label{as:returns}
+The pass probability $q_\theta(x)$ is increasing and concave in the effort per unit of difficulty $x=b/d$, and lower under the strict standard. The ratio form in \eqref{eq:pass} is the baseline.
+\end{assumption}
+
+\begin{assumption}[Costly early evaluation]\label{as:fee}
+The evaluator's verdicts arrive after all tasks have been delivered. The team can obtain the verdict on a task immediately after completing it by paying a fee of $c>0$ tokens.
+\end{assumption}
+
+Assumption~\ref{as:eval} places the evaluator outside the system, in the way a market is outside a firm: the team can respond to it and learn about it, but cannot set it. Assumption~\ref{as:diff}, together with the difference in difficulty, is what makes the standard worth knowing. If all tasks had the same difficulty, the team would divide its tokens equally whatever the standard, and knowing the standard would change nothing. Table~\ref{tab:complements} makes the same point with the numbers of the example in Section~\ref{sec:team}. A team that cannot tell easy from hard tasks gives every task the same tokens, and knowing the standard is then worth nothing. Seeing the difficulty alone adds little. The two together add about four passes. Looking over the tasks in advance, which the team is assumed to do, tells it their difficulty and nothing about the standard.
+
+\begin{table}[htbp]
+\centering
+\small
+\begin{tabular}{@{}lcc@{}}
+\toprule
+ & Standard not known & Standard known \\
+\midrule
+Difficulty not observed & $39.6$ & $39.6$ \\
+Difficulty observed & $39.8$ & $43.6$ \\
+\bottomrule
+\end{tabular}
+\caption{Expected passes with $100$ tokens for $100$ tasks and no learning phase, at the parameters of the example in Section~\ref{sec:team}.}
+\label{tab:complements}
+\end{table}
+
+Assumption~\ref{as:effort} is mostly a normalization: any control that raises the pass probability can be labeled by the tokens it uses. The tokens assigned to a task are the envelope set for it; the tokens a model generates inside a given envelope vary from run to run, and the model abstracts from this. Assumption~\ref{as:fee} describes an evaluator that is expensive to consult, such as a human reviewer, or a reviewing agent whose own token use is charged to the team. If verdicts were free and immediate, the team would simply evaluate every task.
+
+\begin{table}[htbp]
+\centering
+\small
+\begin{tabular}{@{}ll@{}}
+\toprule
+Symbol & Meaning \\
+\midrule
+$K$, $n_e$, $n_h$ & Number of tasks; number of easy and of hard tasks \\
+$d_e$, $d_h$ & Difficulty of an easy and of a hard task, $d_e<d_h$ \\
+$b$, $x=b/d$ & Tokens spent on a task; effort per unit of difficulty \\
+$\theta\in\{\theta_L,\theta_H\}$ & Evaluator's standard, lenient or strict \\
+$\pi_0$, $\pi$ & Prior and current probability that the standard is strict \\
+$q_\theta(x)$, $\bar q(\pi,x)$ & Pass probability under $\theta$; its average under belief $\pi$ \\
+$B$ & Token budget of the team \\
+$c$ & Fee, in tokens, for an early evaluation \\
+$\tau$ & Number of learning tasks \\
+$b^I$, $s=d_e b^I+c$ & Effort per unit of difficulty on a learning task; tokens it uses \\
+$w$, $\pi_\tau(w)$ & Passes among the learning tasks; belief after observing them \\
+$V(B)$, $W(B)$ & Value of the budget with and without learning \\
+$R(B)=V(B)-W(B)$ & Learning premium \\
+$T$, $a$, $v_1$, $v_2$ & Total budget; tokens given to team 1; values of a pass \\
+\bottomrule
+\end{tabular}
+\caption{Notation.}
+\end{table}
+
+\section{The Problem of a Single Team}\label{sec:team}
+
+The team proceeds in two phases. An early evaluation costs the same whenever it is bought, and what it reveals helps with every task that remains, so evaluations are most useful at the start.
+
+In the learning phase the team completes $\tau$ easy tasks, gives each the effort $d_e\,b^I$, and has each evaluated immediately. A learning task therefore uses $s=d_e\,b^I+c$ tokens and passes with probability $q_\theta^I=q_\theta(b^I)$. In the baseline we take $b^I=\sqrt{\theta_L\theta_H}$, the effort at which the pass probabilities under the two standards differ the most. With $w$ passes among the $\tau$ learning tasks, Bayes' rule gives the posterior odds
+\[
+\frac{\pi_\tau(w)}{1-\pi_\tau(w)}=\frac{\pi_0}{1-\pi_0}\left(\frac{q_{\theta_H}^I}{q_{\theta_L}^I}\right)^{w}\left(\frac{1-q_{\theta_H}^I}{1-q_{\theta_L}^I}\right)^{\tau-w},
+\]
+and $w$ occurs with probability $P_\tau(w)=\sum_\theta\Pr(\theta)\binom{\tau}{w}(q_\theta^I)^w(1-q_\theta^I)^{\tau-w}$.
+
+In the commit phase the team divides what is left of its budget over the remaining tasks and requests no further evaluation. Write $\bar q(\pi,x)=\pi\,q_{\theta_H}(x)+(1-\pi)\,q_{\theta_L}(x)$. With belief $\pi$, $\tilde B$ tokens, $m_e$ easy tasks and $m_h$ hard tasks, the team solves
+\begin{equation}\label{eq:commit}
+G(\pi;\tilde B,m_e,m_h)=\max_{b_e,\,b_h\ge0}\ m_e\,\bar q\!\left(\pi,\frac{b_e}{d_e}\right)+m_h\,\bar q\!\left(\pi,\frac{b_h}{d_h}\right)
+\quad\text{subject to}\quad m_e\,b_e+m_h\,b_h\le\tilde B ,
+\end{equation}
+where $b_e$ and $b_h$ are the tokens per easy and per hard task. Tasks of the same difficulty receive the same tokens because the pass probability is concave.
+
+The team chooses the length of the learning phase. Its problem is
+\begin{equation}\label{eq:team}
+\begin{aligned}
+V(B)=\max_{\tau}\ &\sum_{w=0}^{\tau}P_\tau(w)\Bigl[\,w+G\bigl(\pi_\tau(w);\,B-\tau s,\,n_e-\tau,\,n_h\bigr)\Bigr]\\
+\text{subject to}\ \ &\tau\in\{0,1,\dots,n_e\},\quad \tau s\le B .
+\end{aligned}
+\end{equation}
+The first term in the bracket counts the learning tasks that pass, and the second is the value of the commit phase given what was learned. A longer learning phase gives a sharper belief for the commit phase. It costs the fees, it removes tokens from the commit phase, and it holds the learning tasks at the effort $b^I$ instead of the effort the team would otherwise choose.
+
+Three objects summarize the solution. The first is the optimal number of learning tasks $\tau^*(B)$. The second is the learning premium,
+\[
+R(B)=V(B)-W(B),\qquad W(B)=G(\pi_0;B,n_e,n_h),
+\]
+where $W$ is the value of the budget to a team that does not learn. The third is the ratio $V'(B)/W'(B)$, which compares the value of an additional token to a team that learns with its value to a team that does not. Questions 1 and 2 of Section 2 are questions about these three objects as functions of $B$.
+
+An example shows why the standard matters. Let $\theta_L=\tfrac12$, $\theta_H=8$, $\pi_0=\tfrac12$, $K=100$ with $n_e=n_h=50$, $d_e=\tfrac14$, $d_h=4$, $c=0.2$ and $B=100$. Table~\ref{tab:example} gives the solution of \eqref{eq:commit} under three states of knowledge.
+
+\begin{table}[htbp]
+\centering
+\small
+\begin{tabular}{@{}lccc@{}}
+\toprule
+What the team knows & Tokens per easy task & Tokens per hard task & Expected passes \\
+\midrule
+The standard is lenient & $0.70$ & $1.30$ & $62.1$ \\
+The standard is strict & $2.00$ & $0$ & $25.0$ \\
+Nothing beyond the prior & $1.16$ & $0.84$ & $60.0$ if lenient, $19.6$ if strict \\
+\bottomrule
+\end{tabular}
+\caption{Allocation of $B=100$ tokens without a learning phase.}
+\label{tab:example}
+\end{table}
+
+A team that knows the standard obtains $43.6$ passes on average; a team that does not obtains $39.8$. Here a learning task uses $0.7$ tokens and passes with probability $0.8$ under the lenient standard and $0.2$ under the strict one. With eight learning tasks the team obtains $42.5$ passes, most of the difference.
+
+\section{The Problem of the Orchestrator}\label{sec:orch}
+
+An orchestrator divides $T$ tokens between two teams. Each team is as in Section 3, with the same primitives, and each faces its own evaluator; the two standards are independent. The orchestrator values a pass of team 1 at $v_1$ and a pass of team 2 at $v_2$, with $v_1>v_2>0$. It fixes the division before the teams start and cannot change it afterwards, so the learning is done by the teams and not by the orchestrator.
+
+Let $a$ be the tokens given to team 1. We compare two problems. In the benchmark the teams do not learn:
+\begin{equation}\label{eq:E}
+\max_{a\in[0,T]}\ v_1\,W(a)+v_2\,W(T-a).
+\end{equation}
+In the problem of interest each team solves \eqref{eq:team} with the tokens it receives:
+\begin{equation}\label{eq:L}
+\max_{a\in[0,T]}\ v_1\,V(a)+v_2\,V(T-a).
+\end{equation}
+Let $a^E$ and $a^L$ be the solutions. Question 3 asks when $a^L>a^E$, so that learning makes the allocation more skewed toward the team the orchestrator values most, and when $a^L<a^E$, so that it makes the allocation more balanced, and how the answer changes with the total $T$.
+
+With more than two teams the orchestrator solves $\max\sum_iv_i\,V_i(a_i)$ subject to $\sum_ia_i\le T$. A related formulation replaces the fixed total by a price $p$ per token and lets each team choose its own budget, $\max_Bv_i\,V(B)-pB$; the question is then how learning changes each team's demand for tokens.
+
+\section{Points for Discussion}
+
+Five modeling choices deserve a second look before we go further.
+
+The evaluator. The model fits an evaluator that is outside the system and costly to consult. If acceptance is decided by automatic checks that run on every task at no cost, there is nothing to buy and the trade-off disappears. The lead example in the paper should therefore be one with a human or downstream evaluator.
+
+Repeated work. If a team faces the same evaluator again, it knows the standard after the first batch. The model describes a new evaluator, or a new kind of task, each time. We need a convincing account of why this is the relevant case.
+
+Two standards. A lenient and a strict standard keep the learning problem simple. With a continuum of standards the team would estimate a number instead of choosing between two hypotheses, and the length of the learning phase would behave differently.
+
+Independent teams. Each team has its own evaluator. If two teams faced the same evaluator, the evaluations bought by one would inform both, and the orchestrator would also decide which team should learn.
+
+Reallocation. The orchestrator divides the budget once. This fits teams that run in parallel, where the verdicts of one team arrive after the others have spent their tokens. If the orchestrator could observe what each team has learned and then move tokens between teams, it would itself become the learner, and the problem would be a different one. The formulation with a price per token at the end of Section 5 needs no division at all. We should say which of these cases the paper covers.
+
+\end{document}

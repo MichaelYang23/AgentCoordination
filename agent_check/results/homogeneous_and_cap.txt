@@ -1,0 +1,38 @@
+homogeneous: W(100)=38.889 ; tau=8,c=1: V=36.961 ; tau=8,c=0: V=38.435
+
+hetero d=(.25,4), c=.2 :  B  tau*  premium
+   20   0  +0.0000
+   25   0  +0.0000
+   28   1  +0.1189
+   30   3  +0.2452
+   32   3  +0.3912
+   34   3  +0.5277
+   36   3  +0.6554
+   38   5  +0.7896
+   40   5  +0.9211
+   45   5  +1.2171
+   50   7  +1.4726
+   60   7  +1.9127
+   80   7  +2.4554
+  100   8  +2.7065
+  130   6  +2.7641
+  160   6  +2.6099
+  200   5  +2.2384
+  250   5  +1.7250
+  300   4  +1.2537
+  400   3  +0.6276
+  500   2  +0.2789
+  600   1  +0.1124
+  700   1  +0.0053
+  800   0  +0.0000
+
+cap model (homogeneous tasks, expected-spend pacing):  B   W   informed-W
+    5    4.97   +0.10   (cap b0=0.05; spend if hard 0.05, if easy 0.05 per task)
+   20   16.64   +1.08   (cap b0=0.22; spend if hard 0.22, if easy 0.18 per task)
+   50   31.27   +3.37   (cap b0=0.62; spend if hard 0.60, if easy 0.40 per task)
+  100   44.72   +4.39   (cap b0=1.44; spend if hard 1.32, if easy 0.68 per task)
+  200   59.28   +0.86   (cap b0=3.57; spend if hard 2.95, if easy 1.05 per task)
+  400   75.37   -5.71   (cap b0=9.98; spend if hard 6.48, if easy 1.52 per task)
+ 1000   94.05   -8.38   (cap b0=63.94; spend if hard 17.57, if easy 2.43 per task)
+theta=0.5: failed run burns 1.44, successful run burns 0.41 on average
+theta=8.0: failed run burns 1.44, successful run burns 0.68 on average

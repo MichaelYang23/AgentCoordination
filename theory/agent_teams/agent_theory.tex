@@ -1,0 +1,531 @@
+\documentclass[11pt]{article}
+\usepackage{amsmath,amssymb,amsthm,booktabs,geometry}
+\geometry{margin=1in}
+\newtheorem{assumption}{Assumption}
+\newtheorem{lemma}{Lemma}
+\newtheorem{proposition}{Proposition}
+\newtheorem{corollary}{Corollary}
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{remark}{Remark}
+
+\title{Teams of AI Agents: Model, Derivations, and Proof Status}
+\author{Working notes, Agent Coordination project}
+\date{15 November 2026}
+
+\begin{document}
+\maketitle
+
+\section{Purpose and Status}
+
+This document is the master record of the mathematics of the agent-team model. It restates the model under two explicit assumptions, derives every result we currently have, and separates what is proved from what is only computed. The paper-style section is \texttt{claude/agent\_model\_section.tex}; where the two differ, this document is the later one. Notation follows the bidding paper wherever the object is the same ($q_\theta$, $\bar q$, $b^I$, $w$, $\pi_\tau(w)$, $\kappa_\tau$, $r$, $K$, $B$, $\tau$, $V$, $W$, $v_1$, $v_2$, $T$, $a$).
+
+Table~\ref{tab:status} lists the results by the strength of what they need. ``General'' means Assumptions~\ref{as:cost} and~\ref{as:returns} only. ``Baseline form'' means the pass probability $x/(x+\theta)$. ``Skeleton'' means that the result uses nothing about the model except the properties collected in Definition~\ref{def:skeleton}, so it applies verbatim to the bidding model as well. Results marked ``checked'' were verified numerically at the baseline parameters of Section~\ref{sec:numbers}, the formulas to eight digits.
+
+\begin{table}[htbp]
+\centering
+\small
+\begin{tabular}{@{}llll@{}}
+\toprule
+Result & Content & Needs & Status \\
+\midrule
+Lemma~\ref{lem:commit} & Commit phase, triage, shadow price & General & Proved \\
+Lemma~\ref{lem:closed} & Closed forms when the standard is known & Baseline form & Proved, checked \\
+Lemma~\ref{lem:learn} & Beliefs after the learning phase & General & Proved \\
+Lemma~\ref{lem:VB} & Value is concave in the budget; its slope & General & Proved, checked \\
+Lemma~\ref{lem:env} & One-sided slopes of $V$; kinks are convex & Skeleton & Proved \\
+Proposition~\ref{prop:decomp} & Information value minus acquisition cost & General & Proved, checked \\
+Corollary~\ref{cor:homog} & Identical tasks: no learning & General & Proved \\
+Proposition~\ref{prop:window} & Learning window is bounded & General & Proved, checked \\
+Lemma~\ref{lem:entry} & Marginal value at entry & Skeleton & Proved \\
+Proposition~\ref{prop:front} & Evaluations are purchased first & General & Proved \\
+Proposition~\ref{prop:identity} & Direction identity for the allocation & Skeleton & Proved \\
+Proposition~\ref{prop:pairwise} & Pairwise dominance & Skeleton & Proved \\
+Corollary~\ref{cor:one} & Only team 1 can learn: more skewed & Skeleton & Proved \\
+Corollary~\ref{cor:both} & Both learn: direction under a pairwise condition & Skeleton & Conditional \\
+Proposition~\ref{prop:demand} & Token demand under a price & Skeleton & Proved, checked \\
+Section~\ref{sec:numbers} & Shape of the premium and of the ratio & & Numerical; see below \\
+\bottomrule
+\end{tabular}
+\caption{Results and their status.}
+\label{tab:status}
+\end{table}
+
+The shape of the premium is taken up in the companion note \texttt{agent\_premium\_shape.tex}. It proves that the value of knowing the standard is single-peaked in the budget, bounds the premium by it, shows by example that the exact premium is not single-peaked for all parameters, and proves that the premium is nondecreasing on an explicit initial range.
+
+\section{Primitives and Assumptions}
+
+A team must complete $K$ tasks: $n_e$ easy tasks of difficulty $d_e$ and $n_h$ hard tasks of difficulty $d_h>d_e$, with $n_e,n_h\ge1$ and $n_e+n_h=K$. The team observes the difficulty of each task before working on it. An evaluator assesses every task after all are delivered and returns pass or fail. The evaluator's standard is $\theta\in\{\theta_L,\theta_H\}$, lenient or strict, and the team's prior is $\pi_0=\mathrm{Prob}(\theta=\theta_H)\in(0,1)$, with $\pi_{0,\theta_H}=\pi_0$ and $\pi_{0,\theta_L}=1-\pi_0$. A task of difficulty $d$ that receives effort $b$ passes with probability $q_\theta(b/d)$; we call $x=b/d$ the effort per unit of difficulty. The team maximizes the expected number of passes.
+
+\begin{assumption}[Committed effort]\label{as:cost}
+Effort is measured in tokens. A task that is assigned effort $b$ uses $b$ tokens whether or not it passes, and its use of tokens does not depend on $\theta$. The team's total use of tokens cannot exceed its budget $B$. An unevaluated task reveals nothing about $\theta$; the team can have a task evaluated immediately upon completion at a fee of $c>0$ tokens.
+\end{assumption}
+
+\begin{assumption}[Diminishing returns]\label{as:returns}
+For each $\theta$, the function $q_\theta:[0,\infty)\to[0,1)$ is continuously differentiable, strictly increasing and strictly concave, with $q_\theta(0)=0$, $q_\theta(x)\to1$ as $x\to\infty$, and $q_\theta'(0)<\infty$. A stricter standard lowers the pass probability: $q_{\theta_H}(x)<q_{\theta_L}(x)$ for $x>0$.
+\end{assumption}
+
+The baseline form is $q_\theta(x)=x/(x+\theta)$, with $r=\theta_H/\theta_L$. We write $\bar q(\pi,x)=\pi\,q_{\theta_H}(x)+(1-\pi)\,q_{\theta_L}(x)$ and $\bar q_x(\pi,x)$ for its derivative in $x$. Under Assumption~\ref{as:returns}, $\bar q(\pi,\cdot)$ is strictly increasing and strictly concave for every belief, $\bar q_x(\pi,\cdot)$ is positive, continuous and strictly decreasing, and $\bar q_x(\pi,x)\to0$ as $x\to\infty$ because $\bar q$ is bounded.
+
+Three remarks on the assumptions. First, measuring effort in tokens is a normalization: any control that raises the pass probability can be relabeled by the tokens it uses. The substantive parts of Assumption~\ref{as:cost} are that tokens are spent whatever the outcome and that their use carries no information about $\theta$; the second is natural when $\theta$ is the standard of an evaluator that the team does not observe. Second, Assumption~\ref{as:returns} concerns the effect of the effort assigned to a given task, not the relation across tasks between tokens used and success; under the optimal allocation the harder tasks can receive more tokens and pass less often, so the model itself generates a weak or negative relation across tasks. Third, everything extends to finitely many difficulty levels; two levels keep the notation light.
+
+The protocol is explore-then-commit. The team chooses a number $\tau$ of learning tasks. Each learning task is an easy task, receives effort $d_e\,b^I$ for a fixed $b^I>0$, and is evaluated immediately. Let
+\[
+s=d_e\,b^I+c
+\]
+denote the tokens a learning task uses. The team then updates its belief and allocates the remaining $B-\tau s$ tokens over the remaining $n_e-\tau$ easy and $n_h$ hard tasks with no further evaluation. A learning length is affordable at $B$ if $\tau\le n_e$ and $\tau s\le B$. In the baseline form $b^I=\sqrt{\theta_L\theta_H}$.
+
+\section{The Commit Phase}
+
+For a belief $\pi$, a budget $R\ge0$ and numbers $m_e,m_h$ of easy and hard tasks, let
+\begin{equation}\label{eq:G}
+G(\pi;R,m_e,m_h)=\max_{b_e,b_h\ge0}\ m_e\,\bar q\!\left(\pi,\frac{b_e}{d_e}\right)+m_h\,\bar q\!\left(\pi,\frac{b_h}{d_h}\right)
+\quad\text{subject to}\quad m_e\,b_e+m_h\,b_h\le R .
+\end{equation}
+
+\begin{lemma}[Commit phase]\label{lem:commit}
+Fix $\pi\in[0,1]$ and $m_e,m_h\ge1$.
+\begin{enumerate}
+\item[(i)] For every $R>0$, among all allocations of $R$ across the individual tasks the optimal one is unique, exhausts the budget, and gives the same effort to tasks of the same difficulty. Its value is $G(\pi;R,m_e,m_h)$.
+\item[(ii)] Easy tasks receive positive effort. Hard tasks receive positive effort if and only if $R>m_e\,d_e\,\underline x(\pi)$, where $\underline x(\pi)>0$ is the unique solution of $\bar q_x(\pi,x)=(d_e/d_h)\,\bar q_x(\pi,0)$. Writing $\underline x_\theta$ for the solution when the standard is known to be $\theta$, we have $\underline x(\pi)\ge\min\{\underline x_{\theta_L},\underline x_{\theta_H}\}$ for every belief.
+\item[(iii)] As a function of $R$, $G$ is continuous, strictly increasing and strictly concave on $[0,\infty)$ and continuously differentiable on $(0,\infty)$, with
+\[
+\frac{\partial G(\pi;R,m_e,m_h)}{\partial R}=\lambda(\pi;R,m_e,m_h):=\frac{1}{d_e}\,\bar q_x\!\left(\pi,\frac{b_e}{d_e}\right),
+\]
+where $b_e$ is the optimal effort on an easy task. The function $\lambda$ is positive, continuous and strictly decreasing in $R$.
+\item[(iv)] As a function of $\pi$, $G$ is convex.
+\end{enumerate}
+\end{lemma}
+
+We call $\lambda$ the shadow price of a token in the commit phase.
+
+\begin{proof}
+For part (i), the expected number of passes is a strictly concave and strictly increasing function of the vector of efforts, because each $\bar q(\pi,\cdot)$ is, and the set of efforts that respect the budget is compact and convex. Hence the optimal allocation exists and is unique. It exhausts the budget, since unused tokens could be added to any task and would raise its pass probability. If two tasks of the same difficulty received different efforts, giving each the average of the two would respect the budget and, by strict concavity, raise the objective. So the problem reduces to \eqref{eq:G}.
+
+For part (ii), one more token on a task of difficulty $d$ with effort $b$ raises its pass probability at the rate $\bar q_x(\pi,b/d)/d$. If the easy tasks received no effort, the hard tasks would receive all of it, and the rate on a hard task would be below $\bar q_x(\pi,0)/d_h$, which is below the rate $\bar q_x(\pi,0)/d_e$ on an easy task, so moving a token to an easy task would raise the objective. Hence easy tasks receive positive effort. Because the problem is concave, the hard tasks receive no effort if and only if, with the whole budget on the easy tasks, the rate on a hard task does not exceed the rate on an easy task, that is, $\bar q_x(\pi,0)/d_h\le\bar q_x\bigl(\pi,R/(m_e d_e)\bigr)/d_e$. Since $\bar q_x(\pi,\cdot)$ decreases strictly and continuously from $\bar q_x(\pi,0)$ to zero and $d_e/d_h<1$, the equation that defines $\underline x(\pi)$ has a unique positive solution and the inequality holds if and only if $R/(m_e d_e)\le\underline x(\pi)$. Finally, if $x\le\min\{\underline x_{\theta_L},\underline x_{\theta_H}\}$ then $q_\theta'(x)\ge(d_e/d_h)\,q_\theta'(0)$ for both values of $\theta$; averaging with weights $\pi$ and $1-\pi$ gives $\bar q_x(\pi,x)\ge(d_e/d_h)\,\bar q_x(\pi,0)$, that is, $x\le\underline x(\pi)$.
+
+For part (iii), write $\phi(b)$ for the objective in \eqref{eq:G} at the efforts $b=(b_e,b_h)$, and let $b(R)$ be the optimal efforts at budget $R$. By part (ii) the easy tasks receive positive effort, so the first-order conditions of the concave problem read
+\[
+\frac{1}{d_e}\,\bar q_x\!\left(\pi,\frac{b_e}{d_e}\right)=\lambda,
+\qquad
+\frac{1}{d_h}\,\bar q_x\!\left(\pi,\frac{b_h}{d_h}\right)\le\lambda\ \text{ with equality if } b_h>0,
+\]
+which defines $\lambda=\lambda(\pi;R,m_e,m_h)>0$ uniquely. The optimal efforts are continuous in $R$ by the maximum theorem and uniqueness, so $\lambda$ is continuous in $R$. Take two budgets $R$ and $R'$. Since $\phi$ is concave and differentiable,
+\[
+\phi\bigl(b(R')\bigr)\le\phi\bigl(b(R)\bigr)+\sum_{j\in\{e,h\}}\frac{m_j}{d_j}\,\bar q_x\!\left(\pi,\frac{b_j(R)}{d_j}\right)\bigl(b_j(R')-b_j(R)\bigr)
+\le\phi\bigl(b(R)\bigr)+\lambda(R)\,(R'-R),
+\]
+where we suppress the other arguments of $\lambda$. The second inequality holds term by term: for the easy tasks the coefficient equals $m_e\lambda(R)$; for the hard tasks it equals $m_h\lambda(R)$ if $b_h(R)>0$, and if $b_h(R)=0$ it is at most $m_h\lambda(R)$ while $b_h(R')-b_h(R)\ge0$; and both budgets are exhausted. Thus $G(R')\le G(R)+\lambda(R)(R'-R)$, and by symmetry $G(R)\le G(R')+\lambda(R')(R-R')$. For $R'>R$ the two inequalities give
+\[
+\lambda(R')\le\frac{G(R')-G(R)}{R'-R}\le\lambda(R).
+\]
+Letting $R'$ tend to $R$ from either side and using the continuity of $\lambda$ shows that $G$ is differentiable with derivative $\lambda$. The display also shows that $\lambda$ is nonincreasing. Strict concavity of $G$ follows from that of $\phi$: for $R\ne R'$ the optimal efforts differ, their average respects the average budget, and its value strictly exceeds the average of the two values. A concave function with a continuous derivative is strictly concave only if the derivative is strictly decreasing, so $\lambda$ is strictly decreasing. Continuity at $R=0$ and monotonicity are immediate.
+
+For part (iv), fix an allocation. Its expected number of passes is an average of its values under the two standards with weights $\pi$ and $1-\pi$, hence affine in $\pi$. The set of allocations that respect the budget does not depend on $\pi$, so $G$ is a maximum of affine functions of $\pi$.
+\end{proof}
+
+Part (ii) is the triage rule: below a threshold budget all additional effort goes to the easy tasks, and the threshold depends on the belief. Part (iv) is where Assumption~\ref{as:cost} does its work. Because tokens are used whatever the standard, the allocations the team can afford do not depend on what it believes, and a better informed team can always imitate a less informed one.
+
+\begin{lemma}[Known standard, baseline form]\label{lem:closed}
+Let $q_\theta(x)=x/(x+\theta)$ and suppose the standard is known to be $\theta$. Then $\underline x_\theta=\theta\bigl(\sqrt{d_h/d_e}-1\bigr)$. Let $M=m_e+m_h$, $S=m_e\sqrt{d_e}+m_h\sqrt{d_h}$ and $D=m_e d_e+m_h d_h$. If $R\ge m_e d_e\,\underline x_\theta$,
+\[
+b_j=\sqrt{d_j}\,\frac{R+\theta D}{S}-\theta\,d_j,\qquad
+G_\theta(R)=M-\frac{\theta S^2}{R+\theta D},\qquad
+\lambda_\theta(R)=\frac{\theta S^2}{(R+\theta D)^2}.
+\]
+If $R<m_e d_e\,\underline x_\theta$, all effort goes to the easy tasks and
+\[
+G_\theta(R)=\frac{m_e R}{R+\theta\,m_e d_e},\qquad
+\lambda_\theta(R)=\frac{\theta\,m_e^2 d_e}{(R+\theta\,m_e d_e)^2}.
+\]
+\end{lemma}
+
+\begin{proof}
+With $q_\theta'(x)=\theta/(x+\theta)^2$, the equation of Lemma~\ref{lem:commit}(ii) reads $\theta/(x+\theta)^2=(d_e/d_h)/\theta$, with solution $\theta\bigl(\sqrt{d_h/d_e}-1\bigr)$. When both types receive effort, the first-order conditions are $\theta d_j/(b_j+\theta d_j)^2=\lambda$ for both $j$, so $b_j+\theta d_j=\sqrt{\theta d_j/\lambda}$. Summing with weights $m_j$ and using the budget gives $R+\theta D=S\sqrt{\theta/\lambda}$, which yields $\lambda_\theta$ and $b_j$. The pass probability of a task of type $j$ is $1-\theta d_j/(b_j+\theta d_j)=1-\sqrt{\lambda\theta d_j}$, and summing gives $G_\theta=M-S\sqrt{\lambda\theta}=M-\theta S^2/(R+\theta D)$. The effort $b_h$ is nonnegative if and only if $R+\theta D\ge\theta S\sqrt{d_h}$, which rearranges to $R\ge m_e d_e\,\theta\bigl(\sqrt{d_h/d_e}-1\bigr)$. Below that budget only the easy tasks receive effort, each $R/m_e$, and the formulas follow by substitution.
+\end{proof}
+
+When the standard is known, the team behaves like a single task with pass technology $M-\theta S^2/(R+\theta D)$: the same ratio form, with $\theta D$ in the place of $\theta$.
+
+\section{The Learning Phase}
+
+A learning task passes with probability $q_\theta^I:=q_\theta(b^I)$, and $q_{\theta_H}^I<q_{\theta_L}^I$ by Assumption~\ref{as:returns}. Let $\bar q^I:=\bar q(\pi_0,b^I)$, let $w$ be the number of passes among the $\tau$ learning tasks, and let $\kappa_\tau=\pi_\tau/(1-\pi_\tau)$ be the posterior odds.
+
+\begin{lemma}[Learning phase]\label{lem:learn}
+With $w$ passes among $\tau$ learning tasks,
+\[
+\kappa_\tau(w)=\kappa_0\left(\frac{q_{\theta_H}^I}{q_{\theta_L}^I}\right)^{w}\left(\frac{1-q_{\theta_H}^I}{1-q_{\theta_L}^I}\right)^{\tau-w},
+\]
+so the posterior depends on the evaluations only through $w$, is decreasing in $w$, and satisfies $\pi_\tau(\tau)<\pi_0<\pi_\tau(0)$ for $\tau\ge1$. Conditional on $\theta$, $w$ is binomial with parameters $\tau$ and $q_\theta^I$; unconditionally $w$ has probabilities $P_\tau(w)=\sum_\theta\pi_{0,\theta}\binom{\tau}{w}(q_\theta^I)^w(1-q_\theta^I)^{\tau-w}$, with $\sum_w P_\tau(w)\,\pi_\tau(w)=\pi_0$ and $\sum_w P_\tau(w)\,w=\tau\,\bar q^I$. The learning phase uses $\tau s$ tokens whatever the outcomes. In the baseline form with $b^I=\sqrt{\theta_L\theta_H}$, which maximizes $q_{\theta_L}(x)-q_{\theta_H}(x)$, the odds are $\kappa_\tau(w)=\kappa_0\,r^{(\tau-2w)/2}$.
+\end{lemma}
+
+\begin{proof}
+Bayes' rule multiplies the odds by $q_{\theta_H}^I/q_{\theta_L}^I<1$ after a pass and by $(1-q_{\theta_H}^I)/(1-q_{\theta_L}^I)>1$ after a fail, and neither factor depends on the current belief, which gives the formula and the monotonicity in $w$. The evaluations are independent given $\theta$, so $w$ is binomial given $\theta$. The posterior averages to the prior by the law of iterated expectations, and the expected number of passes is $\tau\sum_\theta\pi_{0,\theta}q_\theta^I=\tau\bar q^I$. Each learning task uses $d_e b^I$ tokens of effort and $c$ of fee by Assumption~\ref{as:cost}. The baseline statements are Lemma 1 of the bidding paper with a pass in place of a win.
+\end{proof}
+
+The difference from the bidding model that matters is the last general statement. A bid is paid only when it wins, so the bidding agent's residual budget $B-w\,b^I$ is random and correlated with the news. Here the residual budget $B-\tau s$ is the same after every history.
+
+\section{The Value of a Budget}
+
+For an affordable $\tau$,
+\begin{equation}\label{eq:V}
+V(\tau;B)=\tau\,\bar q^I+\sum_{w=0}^{\tau}P_\tau(w)\;G\bigl(\pi_\tau(w);\,B-\tau s,\,n_e-\tau,\,n_h\bigr),
+\end{equation}
+$V(B)=\max_\tau V(\tau;B)$ over affordable $\tau$, $\tau^*(B)$ is a maximizer, $W(B)=V(0;B)=G(\pi_0;B,n_e,n_h)$ is the value without learning, and $R(B)=V(B)-W(B)\ge0$ is the learning premium.
+
+\begin{lemma}[Value as a function of the budget]\label{lem:VB}
+For every $\tau\in\{0,\dots,n_e\}$, the function $V(\tau;\cdot)$ is continuous, strictly increasing and strictly concave on $[\tau s,\infty)$ and continuously differentiable on $(\tau s,\infty)$, with
+\begin{equation}\label{eq:VBslope}
+\frac{\partial V(\tau;B)}{\partial B}=\sum_{w=0}^{\tau}P_\tau(w)\;\lambda\bigl(\pi_\tau(w);\,B-\tau s,\,n_e-\tau,\,n_h\bigr).
+\end{equation}
+In particular $W'(B)=\lambda(\pi_0;B,n_e,n_h)$, $W$ is strictly concave, and $W'(B)$ increases to $\bar q_x(\pi_0,0)/d_e<\infty$ as $B$ decreases to zero.
+\end{lemma}
+
+\begin{proof}
+Each term of the sum in \eqref{eq:V} is a function of $B$ of the kind studied in Lemma~\ref{lem:commit}(iii), evaluated at $B-\tau s$, and the weights $P_\tau(w)$ and the first term do not depend on $B$. A positive combination of continuous, strictly increasing, strictly concave and continuously differentiable functions has the same properties, and its derivative is the combination of the derivatives. When $\tau=n_e$ no easy task remains, and the same argument applies with the hard tasks alone. For $W$, as $B$ decreases to zero the effort on an easy task tends to zero and $\lambda$ tends to $\bar q_x(\pi_0,0)/d_e$, which is finite by Assumption~\ref{as:returns}.
+\end{proof}
+
+The slope formula \eqref{eq:VBslope} says that the marginal value of a token to a team that runs $\tau$ learning tasks is the expected shadow price of a token in its commit phase. It replaces the envelope formula of the smoothed bidding model and needs no smoothing. One consequence is that $W'$ is bounded at zero, unlike in the bidding model, so the benchmark allocation across teams can be a corner.
+
+\begin{lemma}[One-sided slopes]\label{lem:env}
+The function $V$ is continuous, strictly increasing and locally Lipschitz on $(0,\infty)$. At every $B>0$ it has one-sided derivatives
+\[
+V'(B+)=\max_{\tau\in\mathcal T^*(B)}\frac{\partial V(\tau;B)}{\partial B},
+\qquad
+V'(B-)=\min_{\tau\in\mathcal T^*(B)}\frac{\partial V(\tau;B)}{\partial B},
+\]
+where $\mathcal T^*(B)$ is the set of maximizers at $B$. Hence $V'(B-)\le V'(B+)$: every kink of $V$ is convex, and $V$ is differentiable wherever the maximizer is unique.
+\end{lemma}
+
+\begin{proof}
+A learning length $\tau\ge1$ becomes affordable at $B=\tau s$, where its value is $\tau\bar q^I$. The team without learning could give $d_e b^I$ to each of $\tau$ easy tasks and spread the remaining $\tau c>0$ tokens, which yields strictly more than $\tau\bar q^I$; so $V(\tau;\tau s)<W(\tau s)$. By continuity, a learning length is never a maximizer at or near the budget at which it becomes affordable. Around any $B>0$, therefore, $V$ is the maximum of finitely many functions that are continuously differentiable on a neighborhood of $B$, namely those in $\mathcal T^*(B)$, the others being strictly smaller near $B$. For $h>0$ small enough,
+\[
+\frac{V(B+h)-V(B)}{h}=\max_{\tau\in\mathcal T^*(B)}\frac{V(\tau;B+h)-V(\tau;B)}{h},
+\]
+and as $h$ decreases to zero each quotient converges to the corresponding derivative, so the maximum converges to the maximum of the derivatives. The left derivative is obtained in the same way, with $h<0$ turning the maximum of the quotients into the minimum of the derivatives. Continuity, monotonicity and the local Lipschitz property are inherited from the finitely many branches.
+\end{proof}
+
+\section{Information Value and Acquisition Cost}
+
+For an affordable $\tau\ge1$ define
+\begin{align*}
+A(\tau;B)&=\sum_{w}P_\tau(w)\,G\bigl(\pi_\tau(w);B,n_e,n_h\bigr)-G(\pi_0;B,n_e,n_h),\\
+C(\tau;B)&=\sum_{w}P_\tau(w)\,G\bigl(\pi_\tau(w);B,n_e,n_h\bigr)-V(\tau;B).
+\end{align*}
+The first is what the evaluations of $\tau$ learning tasks would be worth if they arrived at no cost before any token was spent. The second is what the team gives up to obtain them: it compares a team that holds the information together with the full budget and all tasks with the team that actually ran the learning phase.
+
+\begin{proposition}[Decomposition]\label{prop:decomp}
+For every $B>0$ and every affordable $\tau\ge1$,
+\[
+V(\tau;B)-W(B)=A(\tau;B)-C(\tau;B),\qquad A(\tau;B)\ge0,\qquad C(\tau;B)>0 .
+\]
+Moreover $A(\tau;B)=0$ if and only if one allocation of $B$ over the $n_e$ easy and $n_h$ hard tasks is optimal for every belief in $[\pi_\tau(\tau),\pi_\tau(0)]$.
+\end{proposition}
+
+\begin{proof}
+The identity holds by definition. $A\ge0$ is Jensen's inequality for the convex function $G(\cdot\,;B,n_e,n_h)$ of Lemma~\ref{lem:commit}(iv) and the posterior, whose mean is the prior by Lemma~\ref{lem:learn}.
+
+For $C$, fix $w$ and consider a team with belief $\pi_\tau(w)$, budget $B$ and all $K$ tasks. It can give effort $d_e b^I$ to $\tau$ easy tasks and allocate the remaining $B-\tau d_e b^I$ optimally over the other tasks. Hence
+\[
+G\bigl(\pi_\tau(w);B,n_e,n_h\bigr)\ge\tau\,\bar q\bigl(\pi_\tau(w),b^I\bigr)+G\bigl(\pi_\tau(w);B-\tau d_e b^I,n_e-\tau,n_h\bigr),
+\]
+and the last term strictly exceeds $G\bigl(\pi_\tau(w);B-\tau s,n_e-\tau,n_h\bigr)$ because $G$ is strictly increasing in the budget and $c>0$. Average over $w$ with the weights $P_\tau(w)$. Since $\bar q(\pi,b^I)$ is affine in $\pi$ and the posterior averages to the prior, the first terms average to $\tau\bar q^I$. The right-hand side therefore averages to more than $V(\tau;B)$ by \eqref{eq:V}, which is $C(\tau;B)>0$.
+
+For the last statement, write $g(\pi)=G(\pi;B,n_e,n_h)$ and let $\ell$ be an affine function with $\ell\le g$ and $\ell(\pi_0)=g(\pi_0)$, which exists because $g$ is convex. If $A=0$, then $\sum_wP_\tau(w)\bigl[g(\pi_\tau(w))-\ell(\pi_\tau(w))\bigr]=0$ with nonnegative terms, so $g=\ell$ at every posterior; by convexity $g\le\ell$ between the smallest and the largest posterior, hence $g=\ell$ on $[\pi_\tau(\tau),\pi_\tau(0)]$. Let $b^0$ be the allocation that is optimal at $\pi_0$. Its value is an affine function of $\pi$ that lies below $g=\ell$ on this interval and equals it at the interior point $\pi_0$; two affine functions related in this way coincide on the interval, so $b^0$ is optimal at every belief in it. Conversely, if one allocation is optimal on the interval, $g$ is affine there and Jensen's inequality holds with equality.
+\end{proof}
+
+Proposition~\ref{prop:decomp} is the agent-model counterpart of the three-term decomposition of the bidding model, with one difference in kind: both terms are signed. Information is worth something exactly when some evaluations would change the allocation, and it is never worth a negative amount. In the bidding model the corresponding information term can be negative, because the pacing constraint is imposed under the posterior and so tightens as the agent learns.
+
+\begin{corollary}[Identical tasks]\label{cor:homog}
+If $d_e=d_h$, then $V(\tau;B)<W(B)$ for every $B>0$ and every affordable $\tau\ge1$.
+\end{corollary}
+
+\begin{proof}
+With a common difficulty, Lemma~\ref{lem:commit}(i) gives every task the same effort whatever the belief. One allocation is optimal for every belief, so $A=0$ and $V(\tau;B)-W(B)=-C(\tau;B)<0$.
+\end{proof}
+
+\begin{proposition}[Learning window]\label{prop:window}
+Let $\underline B=n_e\,d_e\,\min\{\underline x_{\theta_L},\underline x_{\theta_H}\}$, let $\delta_I=1-\bar q^I$, and let $\overline B$ be the budget with $W(\overline B)=K-\delta_I$. Then $0<\underline B$, $\overline B<\infty$, and $V(\tau;B)<W(B)$ for every affordable $\tau\ge1$ whenever $B\le\underline B$ or $B\ge\overline B$. In addition, for every $B$,
+\[
+R(B)\le\sum_\theta\pi_{0,\theta}\,G_\theta(B)-W(B),
+\]
+where $G_\theta(B)$ is the value of the budget when the standard is known to be $\theta$. In the baseline form $\underline B=n_e\,d_e\,\theta_L\bigl(\sqrt{d_h/d_e}-1\bigr)$.
+\end{proposition}
+
+\begin{proof}
+Let $B\le\underline B$. For every belief, $B/(n_e d_e)\le\min\{\underline x_{\theta_L},\underline x_{\theta_H}\}\le\underline x(\pi)$, so by Lemma~\ref{lem:commit}(ii) the hard tasks receive no effort and each easy task receives $B/n_e$. One allocation is optimal for every belief, so $A(\tau;B)=0$ by Proposition~\ref{prop:decomp} and $V(\tau;B)-W(B)=-C(\tau;B)<0$.
+
+For the upper end, the commit phase yields fewer than one pass per remaining task, so by \eqref{eq:V} $V(\tau;B)<\tau\bar q^I+(K-\tau)=K-\tau\delta_I\le K-\delta_I$ for every $\tau\ge1$ and every $B$. The function $W$ is continuous and strictly increasing, and it tends to $K$: giving every task the effort per unit of difficulty $B/(n_ed_e+n_hd_h)$ respects the budget and yields $K\,\bar q\bigl(\pi_0,B/(n_ed_e+n_hd_h)\bigr)$, which tends to $K$ by Assumption~\ref{as:returns}. Hence $\overline B$ exists and is finite, and $W(B)\ge K-\delta_I>V(\tau;B)$ for $B\ge\overline B$.
+
+For the bound, convexity gives $G(\pi;B,n_e,n_h)\le\pi\,G_{\theta_H}(B)+(1-\pi)\,G_{\theta_L}(B)$ for every $\pi$; averaging over the posterior shows $A(\tau;B)\le\sum_\theta\pi_{0,\theta}G_\theta(B)-W(B)$, and $R(B)\le\max_\tau A(\tau;B)$ by Proposition~\ref{prop:decomp}.
+\end{proof}
+
+\begin{remark}
+In the baseline form $\underline B$ is exactly the largest budget at which information is worthless. Just above it, the hard tasks receive effort under the lenient standard and none under the strict one, so no single allocation is optimal under both and the value of knowing the standard is positive. Learning begins at a larger budget, because the acquisition cost is positive. The upper bound $\overline B$ is conservative; it uses only that a learning task passes with probability $\bar q^I$ on average while a well funded team passes almost every task. If pass probabilities are capped at some $\varphi<1$, the same argument goes through with $K-\tau(\varphi-\bar q^I)$ in place of $K-\tau\delta_I$ provided $\bar q^I<\varphi$.
+\end{remark}
+
+\section{The Marginal Value of a Token}
+
+\begin{lemma}[Marginal value at entry]\label{lem:entry}
+Suppose $R(B)=0$ for $B\le B_1$ and $R(B)>0$ for $B$ in an interval to the right of $B_1$. Then $V'(B_1+)\ge W'(B_1)$.
+\end{lemma}
+
+\begin{proof}
+By Lemma~\ref{lem:env} the right derivative of $R=V-W$ at $B_1$ exists. Since $R(B_1)=0$ and $R\ge0$, the quotient $R(B_1+h)/h$ is nonnegative for $h>0$, and so is its limit.
+\end{proof}
+
+Wherever $V$ is differentiable, define the ratio of marginal values
+\begin{equation}\label{eq:H}
+H(B)=\frac{V'(B)}{W'(B)}
+=\frac{\sum_wP_{\tau^*}(w)\,\lambda\bigl(\pi_{\tau^*}(w);B-\tau^*s,n_e-\tau^*,n_h\bigr)}{\lambda(\pi_0;B,n_e,n_h)},\qquad \tau^*=\tau^*(B),
+\end{equation}
+so that $R'(B)=W'(B)\,[H(B)-1]$ and $H=1$ wherever the team does not learn. By Lemmas~\ref{lem:env} and~\ref{lem:entry}, $H$ can jump only upward where the optimal learning length changes, and $H\ge1$ immediately above the entry budget.
+
+Formula \eqref{eq:H} separates two forces. Learning leaves $B-\tau^*s$ tokens for $K-\tau^*$ tasks, which changes how scarce tokens are in the commit phase; and it replaces the prior by a posterior that is close to zero or one, which changes the shadow price at a given scarcity. Lemma~\ref{lem:closed} gives the second force in closed form at the two ends: $\lambda_\theta(R)=\theta S^2/(R+\theta D)^2$ is increasing in $\theta$ for $R>\theta D$ and decreasing for $R<\theta D$. We have not turned this into a characterization of the shape of $H$; see Section~\ref{sec:open}.
+
+\section{Evaluations Are Purchased First}
+
+\begin{proposition}\label{prop:front}
+Consider all policies in which the team decides, task by task and as a function of the evaluations observed so far, which remaining task to complete next, how much effort to spend on it, and whether to have it evaluated immediately at the fee $c$, subject to the budget on every path. There is an optimal policy under which, on every path, every evaluated task is completed before every unevaluated task.
+\end{proposition}
+
+\begin{proof}
+An optimal policy exists because the number of tasks is finite and efforts range over a compact set on which pass probabilities are continuous. Call a policy front-loaded if on every path every evaluated task precedes every unevaluated task. We show by induction on the number of remaining tasks that every policy can be replaced by a front-loaded policy with the same expected number of passes and the same use of tokens on every path.
+
+With one task remaining there is nothing to show. Suppose the claim holds whenever fewer than $n$ tasks remain, and consider a policy for $n$ remaining tasks. If its first task is evaluated, apply the induction hypothesis to the continuation that follows each of the two outcomes. Suppose instead that its first task, task $i$, is not evaluated. By Assumption~\ref{as:cost} completing it reveals nothing, so the policy has a single continuation for the other $n-1$ tasks, which by the induction hypothesis we may take to be front-loaded. If the continuation evaluates no task, the policy is front-loaded. Otherwise the continuation begins with an evaluated task, task $j$, whose effort was chosen with the same information as the effort on task $i$. Consider the policy that completes and evaluates task $j$ first with the same effort, then completes task $i$ without evaluation and with the same effort whatever the outcome for task $j$, and then follows what the original policy prescribed after that outcome. The pass probability of a task depends only on its own effort and on $\theta$, so the two policies induce the same joint distribution of outcomes, and they use the same tokens on every path. The new policy begins with an evaluated task, and each of its two continuations is a policy for $n-1$ tasks, to which the induction hypothesis applies.
+\end{proof}
+
+The proposition uses three things: an unevaluated task reveals nothing, the fee does not change over time, and the objective does not depend on the order of the tasks. It says that the two-phase shape is optimal, not that the protocol of Section 2 is. Within the learning phase an optimal policy may stop as a function of the evaluations, choose the effort on each learning task, and use hard tasks.
+
+\section{Allocation across Teams}
+
+An orchestrator divides $T$ tokens between two teams with the same primitives and independent standards. It values a pass of team 1 at $v_1$ and a pass of team 2 at $v_2$, with $v_1>v_2>0$, and gives $a$ tokens to team 1:
+\[
+\text{(E)}\ \max_{a\in[0,T]}\ v_1W(a)+v_2W(T-a),
+\qquad
+\text{(L)}\ \max_{a\in[0,T]}\ F(a):=v_1V(a)+v_2V(T-a).
+\]
+Because $W$ is strictly concave, (E) has a unique solution $a^E$. It is interior, with $v_1W'(a^E)=v_2W'(T-a^E)$ and $a^E>T/2$, if and only if $v_1W'(T)<v_2W'(0+)$; otherwise $a^E=T$. The corner arises only for small totals, since $W'(0+)$ is finite by Lemma~\ref{lem:VB}. A solution $a^L$ of (L) exists by continuity.
+
+The results of this section and the next use only the following properties, which we collect because the bidding model has them too.
+
+\begin{definition}[Skeleton]\label{def:skeleton}
+A learn-then-commit technology is a finite family of functions $V(\tau;\cdot)$, one of which, $W=V(0;\cdot)$, is defined on $[0,\infty)$, continuously differentiable on $(0,\infty)$, strictly increasing and strictly concave, while each of the others is defined from some budget on, is continuously differentiable and strictly increasing beyond it, and lies strictly below $W$ at the budget at which it becomes available. Its value is $V(B)=\max_\tau V(\tau;B)$, its premium is $R=V-W$, and its ratio is $H=V'/W'$ wherever $V$ is differentiable.
+\end{definition}
+
+For any such technology, the conclusions of Lemmas~\ref{lem:env} and~\ref{lem:entry} hold with the same proofs, $V$ is differentiable at all but at most countably many budgets, $H>0$, and $R'=W'(H-1)$ at every budget at which $V$ is differentiable.
+
+\begin{lemma}[Swap]\label{lem:swap}
+Every solution of (L) satisfies $a^L\ge T/2$.
+\end{lemma}
+
+\begin{proof}
+For $a<T/2$, $F(T-a)-F(a)=(v_1-v_2)\bigl[V(T-a)-V(a)\bigr]>0$ because $V$ is strictly increasing.
+\end{proof}
+
+\begin{proposition}[Direction identity]\label{prop:identity}
+Suppose $a^E$ is interior and $V$ is differentiable at $a^E$ and at $T-a^E$. Then
+\[
+F'(a^E)=v_1W'(a^E)\,\bigl[H(a^E)-H(T-a^E)\bigr]=v_1R'(a^E)-v_2R'(T-a^E).
+\]
+\end{proposition}
+
+\begin{proof}
+$F'(a^E)=v_1W'(a^E)H(a^E)-v_2W'(T-a^E)H(T-a^E)$, and $v_2W'(T-a^E)=v_1W'(a^E)$ by the first-order condition of (E). The second form follows from $R'=W'(H-1)$ at both budgets and the same first-order condition.
+\end{proof}
+
+The second form is the one to read: at the benchmark, the orchestrator moves tokens toward the team whose premium, weighted by the value of its passes, rises faster or falls more slowly in its budget. Whether both teams learn does not by itself decide the direction.
+
+\begin{proposition}[Pairwise dominance]\label{prop:pairwise}
+Suppose $a^E$ is interior.
+\begin{enumerate}
+\item[(i)] If $H(x)\le H(T-x)$ for almost every $x$ in an interval $(a^E,\bar a)$, then $F$ is strictly decreasing on $[a^E,\bar a]$, and no solution of (L) lies in $(a^E,\bar a]$.
+\item[(ii)] If $H(x)\ge H(T-x)$ for almost every $x$ in an interval $(\underline a,a^E)$, then $F$ is strictly increasing on $[\underline a,a^E]$, and no solution of (L) lies in $[\underline a,a^E)$.
+\end{enumerate}
+\end{proposition}
+
+\begin{proof}
+$F$ is locally Lipschitz, hence the integral of its derivative, and at almost every $x$
+\[
+F'(x)=v_1W'(x)\,H(x)-v_2W'(T-x)\,H(T-x).
+\]
+Because $W'$ is strictly decreasing and $v_1W'(a^E)=v_2W'(T-a^E)$, we have $v_1W'(x)<v_2W'(T-x)$ for $x>a^E$ and the reverse inequality for $x<a^E$. In case (i), $F'(x)\le H(T-x)\bigl[v_1W'(x)-v_2W'(T-x)\bigr]<0$ for almost every $x$ in the interval, using $H(x)\le H(T-x)$ and $H(T-x)>0$. In case (ii), $F'(x)\ge H(T-x)\bigl[v_1W'(x)-v_2W'(T-x)\bigr]>0$.
+\end{proof}
+
+Proposition~\ref{prop:pairwise} needs neither concavity of $V$ nor differentiability at its kinks nor monotonicity of $H$. It compares the ratio at pairs of budgets that add up to the total, which is the comparison the orchestrator actually faces.
+
+Let $B_1$ be the entry budget, the largest budget such that $R=0$ on $[0,B_1]$, and let $\hat B$ be the largest budget such that $R$ is nondecreasing on $[0,\hat B]$. Then $B_1\le\hat B$, and $H\ge1$ almost everywhere on $(0,\hat B)$.
+
+\begin{corollary}[Only team 1 can learn]\label{cor:one}
+Suppose $a^E$ is interior, $T/2\le B_1$ and $a^E\le\hat B$. Then every solution of (L) satisfies $a^L\ge a^E$: learning makes the allocation weakly more skewed.
+\end{corollary}
+
+\begin{proof}
+For $x\in(T/2,a^E)$ we have $T-x<T/2\le B_1$, so $H(T-x)=1$, and $x<\hat B$, so $H(x)\ge1$ almost everywhere. Proposition~\ref{prop:pairwise}(ii) with $\underline a=T/2$ excludes $[T/2,a^E)$, and Lemma~\ref{lem:swap} excludes $[0,T/2)$.
+\end{proof}
+
+\begin{corollary}[Both teams learn]\label{cor:both}
+Suppose $a^E$ is interior, $T-a^E>B_1$, and $H(x)\le H(T-x)$ for almost every $x\in(a^E,T-B_1)$. Then no allocation in which team 2 receives at least $B_1$ and team 1 receives more than $a^E$ solves (L): among the allocations in which both teams can learn, the best gives team 1 no more than in the benchmark.
+\end{corollary}
+
+\begin{proof}
+Proposition~\ref{prop:pairwise}(i) with $\bar a=T-B_1$.
+\end{proof}
+
+Corollary~\ref{cor:one} is unconditional but covers only totals with $T/2\le B_1$. For larger totals at which team 2 is still below its entry budget in the benchmark, the comparison $H(x)\ge H(T-x)$ can fail on part of $(T/2,a^E)$ and the conclusion rests on the numbers of Section~\ref{sec:numbers}. Corollary~\ref{cor:both} is conditional on the ratio being lower at the larger budget, which holds when $H$ is nonincreasing between the two budgets, and it leaves open whether the global solution of (L) keeps both teams above the entry budget; that comparison across configurations is also numerical at present.
+
+\section{Token Demand under a Price}
+
+Suppose that instead of a fixed total, a team faces a price $p$ per token and chooses its own budget. A team without learning chooses $B^E$ to maximize $vW(B)-pB$; a learning team chooses $B^L$ to maximize $vV(B)-pB$. Assume $p<vW'(0+)$, so that $B^E>0$ and $vW'(B^E)=p$. A maximizer $B^L$ exists because $V\le K$.
+
+\begin{proposition}[Token demand]\label{prop:demand}
+\begin{enumerate}
+\item[(i)] If $H\ge1$ almost everywhere on $(0,B^E)$, in particular if $B^E\le\hat B$, then every $B^L\ge B^E$.
+\item[(ii)] If $H\le1$ almost everywhere on $(B^E,\infty)$, then every $B^L\le B^E$.
+\end{enumerate}
+Consequently, if the premium is single-peaked with its peak at $\hat B$, learning raises a team's demand for tokens when its benchmark demand is below $\hat B$ and lowers it when its benchmark demand is above $\hat B$.
+\end{proposition}
+
+\begin{proof}
+At almost every $B$ the derivative of $vV(B)-pB$ is $vW'(B)H(B)-p$. For $B<B^E$ we have $vW'(B)>p$, so under (i) the derivative is at least $vW'(B)-p>0$ almost everywhere on $(0,B^E)$; the objective is strictly increasing there and no maximizer lies below $B^E$. For $B>B^E$ we have $vW'(B)<p$, so under (ii) the derivative is at most $vW'(B)-p<0$ almost everywhere, and no maximizer lies above $B^E$. If the premium is single-peaked at $\hat B$, then $H\ge1$ almost everywhere below $\hat B$ and $H\le1$ almost everywhere above it, and (i) or (ii) applies according to whether $B^E\le\hat B$ or $B^E\ge\hat B$.
+\end{proof}
+
+Proposition~\ref{prop:demand} answers the objection that tokens are priced and budgets are not fixed. With a price, the allocation problem across teams separates, and the effect of learning appears as a shift in each team's demand: poorly funded teams ask for more, well funded teams ask for less. It needs only the sign of $R'$, not the monotonicity of $H$.
+
+\section{What the Two Models Share}\label{sec:shared}
+
+The bidding model is not a special case of the agent model, nor the reverse. Both are instances of Definition~\ref{def:skeleton}, and they differ in the layer above it, as Table~\ref{tab:layers} shows. In the bidding model $W$ is strictly concave and each $V(\tau;\cdot)$ is smooth above its feasibility floor; that each learning length lies below $W$ at its floor is proved for $\tau=1$ for all primitives and is certified at the baseline for the learning lengths covered by the low-budget certificate, and remains to be checked in general. The smoothed bidding model has a continuum of learning lengths; the statements of this document that rely on finitely many branches then need the envelope theorem in the form used in the bidding paper.
+
+\begin{table}[htbp]
+\centering
+\small
+\begin{tabular}{@{}p{0.27\textwidth}p{0.33\textwidth}p{0.33\textwidth}@{}}
+\toprule
+ & Bidding agent & Team of AI agents \\
+\midrule
+Resource used by an action & $b$ if it wins, nothing otherwise; depends on $\theta$ in expectation & $b$ with certainty; independent of $\theta$ \\
+Feedback & Free after every auction & Only on request, at a fee $c$ \\
+Budget constraint & In expectation under the current belief & On every path \\
+Why information has value & The paced bid depends on the belief & Triage across difficulties depends on the belief \\
+Sign of the information term & Can be negative & Nonnegative (Proposition~\ref{prop:decomp}) \\
+Why the learner commits & Assumed & Implied (Proposition~\ref{prop:front}) \\
+Lower end of the window & Spending is scarce; shadow price unbounded & Allocation does not depend on the belief \\
+Upper end of the window & $V(\tau;B)\le K-\tau\delta_I$ & Same bound \\
+Slope of the value & Envelope formula, smoothed model & Expected shadow price, exact model \\
+\midrule
+Shared (skeleton) & \multicolumn{2}{p{0.66\textwidth}}{Convex kinks; marginal value at entry; direction identity; pairwise dominance; token demand} \\
+\bottomrule
+\end{tabular}
+\caption{The two instances of the skeleton.}
+\label{tab:layers}
+\end{table}
+
+A model that nests both would let the expected use of the resource by an action be a general function $e_\theta(b)$, with $e_\theta(b)=b\,q_\theta(b)$ in bidding and $e_\theta(b)=b$ here, and would let feedback be free or priced. We have not written it out; the table indicates which results would survive, namely those of the skeleton, and which would not, namely the sign of the information term and the reason for commitment.
+
+\section{Numbers at the Baseline}\label{sec:numbers}
+
+The baseline is $\theta_L=\tfrac12$, $\theta_H=8$, $\pi_0=\tfrac12$, $b^I=2$, $K=100$, $n_e=n_h=50$, $d_e=\tfrac14$, $d_h=4$, $c=0.2$, so $s=0.7$, $q_{\theta_L}^I=0.8$, $q_{\theta_H}^I=0.2$ and $\delta_I=0.5$. All values are exact sums over the learning outcome with a numerically solved commit phase.
+
+Formula checks. The closed forms of Lemma~\ref{lem:closed} agree with the numerical optimum to eight digits at eight combinations of standard, budget and task counts, on both sides of the triage threshold. The slope formula \eqref{eq:VBslope} agrees with central differences to eight digits at $(\tau,B)=(8,100)$, $(5,200)$, $(3,30)$, $(1,26)$ and $(0,100)$. The decomposition of Proposition~\ref{prop:decomp} gives, for example, $A=3.478$ and $C=0.771$ at $(8,100)$, and $A=0$ with $C=0.277$ at $(2,15)$, below $\underline B=18.75$.
+
+\begin{table}[htbp]
+\centering
+\small
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{@{}lcccccccccccc@{}}
+\toprule
+$B$ & 20 & 26 & 30 & 40 & 60 & 100 & 122 & 160 & 250 & 400 & 600 & 720 \\
+\midrule
+$\tau^*$ & 0 & 1 & 3 & 5 & 7 & 8 & 7 & 6 & 5 & 3 & 1 & 0 \\
+$R$ & 0 & 0.03 & 0.25 & 0.92 & 1.91 & 2.71 & 2.77 & 2.61 & 1.73 & 0.63 & 0.11 & 0 \\
+$H$ & 1 & 1.12 & 1.28 & 1.27 & 1.19 & 1.05 & 1.00 & 0.92 & 0.83 & 0.87 & 0.95 & 1 \\
+Value of knowing $\theta$ & 0.01 & 0.31 & 0.64 & 1.46 & 2.63 & 3.78 & 4.03 & 4.10 & 3.48 & 2.08 & 1.12 & 0.80 \\
+\bottomrule
+\end{tabular}
+\caption{Single team. $H$ is computed from \eqref{eq:H}. The last row is the bound of Proposition~\ref{prop:window}.}
+\label{tab:single}
+\end{table}
+
+Table~\ref{tab:single} shows the single-team objects. The team learns between $B\approx25$ and $B\approx705$; entry is with one learning task, so it is continuous. At these parameters the premium is single-peaked with $\hat B\approx120$. The ratio is above one from entry to $\hat B$, falls to about $0.83$ near $B=250$, and returns to one. The value of knowing the standard is positive at every budget above $\underline B=18.75$ and is roughly one and a half times the premium near the peak.
+
+\begin{table}[htbp]
+\centering
+\small
+\setlength{\tabcolsep}{5pt}
+\begin{tabular}{@{}rcccc@{}}
+\toprule
+$T$ & Benchmark (E) & Learning (L) & Shift $a^L-a^E$ & Learning lengths \\
+\midrule
+40  & $(26,14)$   & $(28,12)$   & $+2$  & $(1,0)$ \\
+60  & $(42,18)$   & $(46,14)$   & $+4$  & $(5,0)$ \\
+100 & $(76,24)$   & $(78,22)$   & $+2$  & $(7,0)$ \\
+150 & $(114,36)$  & $(104,46)$  & $-10$ & $(8,5)$ \\
+300 & $(208,92)$  & $(194,106)$ & $-14$ & $(6,7)$ \\
+500 & $(332,168)$ & $(324,176)$ & $-8$  & $(4,6)$ \\
+700 & $(456,244)$ & $(468,232)$ & $+12$ & $(2,5)$ \\
+\bottomrule
+\end{tabular}
+\caption{Two teams at $v_1/v_2=2$, budgets on a grid of two tokens.}
+\label{tab:alloc}
+\end{table}
+
+Table~\ref{tab:alloc} shows the allocation. The shift is positive for totals from about $40$ to $110$, turns negative at $T\approx112$ where team 2 reaches its entry budget, stays negative to about $560$, and is positive again beyond about $610$. Corollary~\ref{cor:one} covers $T\le51$; the rest of the first regime and all of the second are numerical.
+
+\begin{table}[htbp]
+\centering
+\small
+\setlength{\tabcolsep}{5pt}
+\begin{tabular}{@{}rccccl@{}}
+\toprule
+$T$ & $a^E$ & $T-a^E$ & $v_1R'(a^E)$ & $v_2R'(T-a^E)$ & Learning makes the split \\
+\midrule
+100 & 76.1  & 23.9  & $+0.0428$ & $0$       & more skewed \\
+150 & 114.6 & 35.4  & $+0.0035$ & $+0.0629$ & more balanced \\
+300 & 207.9 & 92.1  & $-0.0196$ & $+0.0113$ & more balanced \\
+500 & 331.8 & 168.2 & $-0.0147$ & $-0.0085$ & more balanced \\
+700 & 456.6 & 243.4 & $-0.0063$ & $-0.0106$ & more skewed \\
+\bottomrule
+\end{tabular}
+\caption{The two terms of Proposition~\ref{prop:identity} at the exact benchmark split.}
+\label{tab:direction}
+\end{table}
+
+Table~\ref{tab:direction} evaluates the direction identity. The sign of the difference agrees with the shift in Table~\ref{tab:alloc} in every row. Both teams learn in the last four rows, and the split becomes more balanced in three of them and more skewed in one. At $T=500$ and $T=700$ both budgets are on the falling side of the premium, with opposite conclusions: what matters is which weighted premium falls faster, not which side of the peak the budgets are on.
+
+\begin{table}[htbp]
+\centering
+\small
+\setlength{\tabcolsep}{5pt}
+\begin{tabular}{@{}lccccccccc@{}}
+\toprule
+$B^E$ & 15 & 24 & 40 & 80 & 110 & 122 & 140 & 200 & 400 \\
+\midrule
+$B^L$ & 15 & 31.5 & 58 & 90 & 112.5 & 121.5 & 135 & 177.5 & 350.5 \\
+\bottomrule
+\end{tabular}
+\caption{Token demand with and without learning at prices that induce the benchmark demands in the first row.}
+\label{tab:demand}
+\end{table}
+
+Table~\ref{tab:demand} confirms Proposition~\ref{prop:demand}: learning raises demand below $\hat B\approx120$ and lowers it above. A team whose benchmark demand is just below the entry budget asks for discretely more, because the tokens that fund learning pay for themselves.
+
+Prior. With a lognormal prior on $\theta$ that has the same mean and standard deviation of $\log\theta$ as the two-point prior, and $B=K$, the optimal learning length is $5$, $9$, $13$, $19$, $28$, $42$ at $K=100,200,\dots,3200$, against $8$, $10$, $12$, $16$, $18$, $20$ under the two-point prior. The first grows by a factor close to $\sqrt2$ per doubling of $K$, the second by two to four tasks per doubling. The premium is $2.9$ to $5.7$ percent of $W$ under the continuous prior and $6.8$ to $9.3$ percent under the two-point prior.
+
+\section{Open Problems}\label{sec:open}
+
+The following are not established and are listed in the order in which we would attack them.
+
+The falling side of the premium. The companion note \texttt{agent\_premium\_shape.tex} settles the full-information analogue: the value of knowing the standard, $\sum_\theta\pi_{0,\theta}G_\theta(B)-W(B)$, is single-peaked in the baseline form. It also shows that the exact premium $R$ is not single-peaked for all parameters, because the slope of $V$ jumps upward where the learning length changes, so the conditions in Sections 9 and 10 cannot be removed by a single-peak theorem. What can be aimed at is one-sided: $R$ is nondecreasing up to a budget $\hat B$ and nonincreasing beyond a budget $\check B\ge\hat B$. The companion note proves the first on an explicit initial range. An explicit budget beyond which $R$ is nonincreasing, other than the exit bound of Proposition~\ref{prop:window}, is open.
+
+Monotonicity of the ratio between the two teams' budgets. This is what Corollary~\ref{cor:both} needs. In the exact model $H$ is discontinuous where the learning length changes and can jump only upward there, so the statement to aim for is the pairwise one, $H(x)\le H(T-x)$, on the relevant range, not global monotonicity.
+
+Comparison across configurations in (L). The first regime beyond $T/2\le B_1$ and the claim that the global solution keeps both teams above the entry budget require comparing local maxima. In the bidding model this was done with a monotonicity argument on the difference of configuration values; the same route should work here.
+
+Nonemptiness. We have not characterized the fees $c$ for which the team learns at some budget. At the baseline it does for $c=0.2$ and for $c=1$.
+
+Optimized learning phase. Proposition~\ref{prop:front} leaves the stopping rule, the effort on learning tasks and their type free. The upper end of the window rests on holding learning tasks at the effort $b^I$; if the team could have tasks evaluated at the effort it would choose anyway, the bound $K-\tau\delta_I$ would no longer apply.
+
+Other priors, a cap on pass probabilities below one, a slope other than one in the ratio form, and noisy observation of difficulty are robustness exercises; the first has been run for the learning length only.
+
+Shared standards. If two teams face the same evaluator, the evaluations one team buys inform both, and the question becomes which team should learn. This is the part of the problem that is specific to teams and is untouched.
+
+\end{document}

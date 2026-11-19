@@ -1,0 +1,20 @@
+belief P(strict) -> tokens per easy task, per hard task, remaining value of knowing the standard
+  0.5000   1.16  0.84   3.781
+  0.8000   1.87  0.13   2.950
+  0.9412   2.00  0.00   0.886
+  0.9846   2.00  0.00   0.232
+  0.9961   2.00  0.00   0.059
+  0.9990   2.00  0.00   0.015
+  1.0000   2.00  0.00   0.000
+
+sample path, true standard strict: F F P F F F F P, then a 9th
+  after 1 (F): belief 0.800  plan 1.87/0.13  remaining value 2.950
+  after 2 (F): belief 0.941  plan 2.00/0.00  remaining value 0.886
+  after 3 (P): belief 0.800  plan 1.87/0.13  remaining value 2.950
+  after 4 (F): belief 0.941  plan 2.00/0.00  remaining value 0.886
+  after 5 (F): belief 0.985  plan 2.00/0.00  remaining value 0.232
+  after 6 (F): belief 0.996  plan 2.00/0.00  remaining value 0.059
+  after 7 (F): belief 0.999  plan 2.00/0.00  remaining value 0.015
+  after 8 (P): belief 0.996  plan 2.00/0.00  remaining value 0.059
+  9th = F: belief 0.999  plan 2.00/0.00  remaining value 0.015
+  9th = P: belief 0.985  plan 2.00/0.00  remaining value 0.232
