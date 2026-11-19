@@ -1,0 +1,46 @@
+lenient known        effort easy=0.70 hard=1.30 | if lenient: easy 85% hard 39% -> 62.1 passes | if strict: easy 26% hard 4% -> 14.9
+strict known         effort easy=2.00 hard=0.00 | if lenient: easy 94% hard 0% -> 47.1 passes | if strict: easy 50% hard 0% -> 25.0
+unknown (prior 1/2)  effort easy=1.16 hard=0.84 | if lenient: easy 90% hard 30% -> 60.0 passes | if strict: easy 37% hard 3% -> 19.6
+W(100)=39.78
+ETC tau=4: V=42.27
+ETC tau=8: V=42.49
+  w=0 passes of 8: P(strict)=1.0000  prob of seeing this: 0.084
+  w=1 passes of 8: P(strict)=0.9998  prob of seeing this: 0.168
+  w=2 passes of 8: P(strict)=0.9961  prob of seeing this: 0.147
+  w=3 passes of 8: P(strict)=0.9412  prob of seeing this: 0.078
+  w=4 passes of 8: P(strict)=0.5000  prob of seeing this: 0.046
+  w=5 passes of 8: P(strict)=0.0588  prob of seeing this: 0.078
+  w=6 passes of 8: P(strict)=0.0039  prob of seeing this: 0.147
+  w=7 passes of 8: P(strict)=0.0002  prob of seeing this: 0.168
+  w=8 passes of 8: P(strict)=0.0000  prob of seeing this: 0.084
+curve time 9s
+learning window on grid: [26, 700]
+
+local ratio dV/dW (10-unit differences):
+  B= 20 tau*=0  ratio=1.076
+  B= 30 tau*=3  ratio=1.269
+  B= 40 tau*=5  ratio=1.245
+  B= 60 tau*=7  ratio=1.173
+  B= 80 tau*=7  ratio=1.099
+  B=100 tau*=8  ratio=1.038
+  B=130 tau*=6  ratio=0.970
+  B=160 tau*=6  ratio=0.911
+  B=200 tau*=5  ratio=0.870
+  B=250 tau*=5  ratio=0.824
+  B=300 tau*=4  ratio=0.836
+  B=400 tau*=3  ratio=0.866
+  B=500 tau*=2  ratio=0.904
+  B=600 tau*=1  ratio=0.946
+
+planner, v1/v2=2:  T   (E) split      (L) split     shift
+    40  ( 26, 14)  ( 28, 12)   +2   tau=(1,0)
+    60  ( 42, 18)  ( 46, 14)   +4   tau=(5,0)
+    80  ( 60, 20)  ( 62, 18)   +2   tau=(7,0)
+   100  ( 76, 24)  ( 78, 22)   +2   tau=(7,0)
+   150  (114, 36)  (104, 46)  -10   tau=(8,5)
+   200  (146, 54)  (134, 66)  -12   tau=(6,7)
+   300  (208, 92)  (194,106)  -14   tau=(6,7)
+   400  (270,130)  (256,144)  -14   tau=(5,6)
+   500  (332,168)  (324,176)   -8   tau=(4,6)
+   600  (394,206)  (394,206)   +0   tau=(3,5)
+   700  (456,244)  (468,232)  +12   tau=(2,5)

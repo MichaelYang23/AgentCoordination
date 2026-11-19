@@ -29,5 +29,17 @@ Research code for *Orchestrating Agent Teams: Budget Allocation in Real-Time Bid
   The 2026-11-19 entry covers 14-19 November: how the AI-agent-team model differs from the WITS (bidding)
   version and from the earlier discussions in this repository, why the model is built as explore-then-commit
   and why that structure fits AI agents, the customer reading of the evaluator (report, satisfaction score,
-  the cost of reading feedback), open reviewer questions and the status of the proofs. It is a record of
-  discussion, not a finished draft; the derivations and scripts it cites are not in this repository yet.
+  the cost of reading feedback), open reviewer questions and the status of the proofs. The
+  [2026-11-15 entry](worklog/2026-11-15_agent_teams_notes.md) is the discussion record of the move from bidding
+  to agent teams. Both are records of discussion, not finished drafts.
+* [`theory/agent_teams/`](theory/agent_teams/): the agent-team model (drafts, LaTeX + PDF; proofs not yet
+  checked by Mike). [`agent_coordination_note`](theory/agent_teams/agent_coordination_note.pdf): background,
+  research questions, setting, the single-team problem and the orchestrator's problem, without results.
+  [`agent_theory`](theory/agent_teams/agent_theory.pdf): the mathematics of the model and the status of each
+  result (commit phase, value and marginal value of a budget, learning window, why paid evaluations come first,
+  direction of the allocation across teams, token demand under a price).
+  [`agent_premium_shape`](theory/agent_teams/agent_premium_shape.pdf): the value of knowing the evaluator's
+  standard is single-peaked in the budget; the exact learning premium is not single-peaked for all parameters
+  (an example); it is nondecreasing on an explicit initial range.
+* [`agent_check/`](agent_check/README.md): scripts that reproduce the numbers in `theory/agent_teams/` and in
+  the worklog, with their outputs in `agent_check/results/`. Numerical checks only, at the baseline parameters.

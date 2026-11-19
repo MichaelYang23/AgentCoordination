@@ -1,0 +1,30 @@
+lower bound formula: n_e d_e min{thL(sqrt(dh/de)-1), bI+c/de} = 18.75
+free-info value (informed - W) near the bound:
+  B=15.00  0.000000
+  B=18.00  0.000000
+  B=18.75  -0.000000
+  B=19.50  0.004343
+  B=21.00  0.036499
+  B=24.00  0.174886
+entry:
+  B=24.0 tau*=0 premium=0.0000
+  B=24.5 tau*=0 premium=0.0000
+  B=25.0 tau*=0 premium=0.0000
+  B=25.5 tau*=1 premium=0.0145
+  B=26.0 tau*=1 premium=0.0330
+  B=26.5 tau*=1 premium=0.0527
+  B=27.0 tau*=1 premium=0.0737
+  B=27.5 tau*=1 premium=0.0958
+  B=28.0 tau*=1 premium=0.1189
+  B=28.5 tau*=2 premium=0.1440
+  B=29.0 tau*=3 premium=0.1720
+exit:
+  B=680 tau*=1 premium=0.02420
+  B=700 tau*=1 premium=0.00534
+  B=710 tau*=0 premium=0.00000
+  B=720 tau*=0 premium=0.00000
+  B=730 tau*=0 premium=0.00000
+  B=740 tau*=0 premium=0.00000
+  B=760 tau*=0 premium=0.00000
+peak premium 2.774 at B=122
+delta_I= 0.5  conservative upper bound B with W(B)=K-delta_I: 131207.45555018517

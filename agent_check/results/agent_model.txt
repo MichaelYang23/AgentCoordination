@@ -1,0 +1,6 @@
+local maxima of R on the fine grid:
+  B=120.25  R=2.774062  tau=7
+local minima:
+tau switches and H just before/after:
+  B in (104.50,104.75): tau 8->7, H 1.0380 -> 1.0397
+  B in (122.75,123.00): tau 7->6, H 0.9939 -> 0.9971

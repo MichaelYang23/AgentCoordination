@@ -1,0 +1,403 @@
+\documentclass[11pt]{article}
+\usepackage{amsmath,amssymb,amsthm,booktabs,geometry}
+\geometry{margin=1in}
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}{Lemma}
+\newtheorem{proposition}{Proposition}
+\newtheorem{corollary}{Corollary}
+\theoremstyle{definition}
+\newtheorem{example}{Example}
+\newtheorem{remark}{Remark}
+
+\title{The Shape of the Learning Premium: What Is Proved}
+\author{Working notes, Agent Coordination project}
+\date{15 November 2026}
+
+\begin{document}
+\maketitle
+
+\section{The Question and Where It Stands}
+
+The theory notes (\texttt{agent\_theory.tex}; its results are cited below with the prefix T) leave open whether the learning premium $R(B)=V(B)-W(B)$ is single-peaked in the budget. This note records a first attempt at that question. Everything stated as proved is proved symbolically and for all parameter values in its stated scope; the numerical checks listed at the end only guard against algebra slips.
+
+There are three findings.
+
+The premium is governed by a simpler object, the value of knowing the standard,
+\[
+N(\pi;B)=\pi\,G_{\theta_H}(B)+(1-\pi)\,G_{\theta_L}(B)-G(\pi;B),
+\]
+which is what a team with belief $\pi$ and budget $B$ would gain if it were told the standard at no cost. Theorem~\ref{th:N} shows that in the baseline form $N$ is exactly single-peaked: it is zero up to the lenient triage budget, strictly increasing up to a peak that lies strictly between the prior's triage budget and the strict triage budget, and strictly decreasing afterwards. This settles the full-information analogue that Section 13 of the theory notes proposed as the first step.
+
+The premium lies below $N$ and within an explicit distance of it that grows only with the logarithm of the number of tasks (Proposition~\ref{prop:sandwich}). For large teams the premium per task therefore converges to a single-peaked function (Corollary~\ref{cor:large}). At the baseline with $K=100$ the bound is too loose to say anything, so this is a statement about large teams.
+
+The exact premium is not single-peaked for all parameters. Example~\ref{ex:scallop} gives parameter values at which it has two local maxima. The cause is the integer learning length: where the optimal length changes, the slope of $V$ jumps upward (Lemma~T5), and when this happens just past a peak the premium turns up again. The dip is tiny, but it means that exact single-peakedness cannot be a theorem of the model as it stands. For finite teams the statements to aim at are one-sided: the premium is nondecreasing up to some budget and nonincreasing beyond some other. Proposition~\ref{prop:rise} proves the first on an explicit range. The second is open beyond the exit bound of Proposition~T2.
+
+\begin{table}[htbp]
+\centering
+\small
+\begin{tabular}{@{}llll@{}}
+\toprule
+Result & Content & Needs & Status \\
+\midrule
+Lemma~\ref{lem:outer} & $N$ on the two outer ranges & Baseline & Proved, checked \\
+Lemma~\ref{lem:level} & Curvature of the iso-loss curves & Baseline & Proved, checked \\
+Theorem~\ref{th:N} & $N$ is single-peaked in the budget & Baseline & Proved, checked \\
+Corollary~\ref{cor:demand} & Token demand of an informed team & Baseline & Proved \\
+Proposition~\ref{prop:sandwich} & Premium within an explicit distance of $N$ & General & Proved \\
+Corollary~\ref{cor:large} & Premium per task in large teams & General & Proved \\
+Example~\ref{ex:scallop} & Exact premium with two local maxima & Baseline & Computed \\
+Lemmas~\ref{lem:resource}, \ref{lem:info} & Resource and information effects & General & Proved \\
+Proposition~\ref{prop:rise} & Premium nondecreasing on $[0,B^{\uparrow}]$ & General & Proved, checked \\
+& Premium nonincreasing beyond an explicit budget & & Open \\
+\bottomrule
+\end{tabular}
+\caption{Status. ``General'' means Assumptions 1 and 2 of the theory notes; ``Baseline'' means the ratio form $q_\theta(x)=x/(x+\theta)$.}
+\end{table}
+
+\section{Failures and Losses}
+
+In Sections 2 to 4 the pass probability has the baseline form $q_\theta(x)=x/(x+\theta)$, the numbers $m_e,m_h>0$ of easy and hard tasks are fixed, and $\pi\in(0,1)$. Nothing in these sections uses that $m_e$ and $m_h$ are integers. Subscripts $L$ and $H$ stand for $\theta_L$ and $\theta_H$. Let
+\[
+D_e=m_ed_e,\quad D_h=m_hd_h,\quad S_e=m_e\sqrt{d_e},\quad S_h=m_h\sqrt{d_h},\quad \sigma_e=\frac{S_e}{S},\quad \sigma_h=\frac{S_h}{S},
+\]
+so that $S=S_e+S_h$ and $D=D_e+D_h$ are the constants of Lemma~T2, and let $\kappa=\sigma_eD_h-\sigma_hD_e=m_em_h\sqrt{d_ed_h}\,(\sqrt{d_h}-\sqrt{d_e})/S>0$.
+
+Give $y\in[0,B]$ tokens in total to the hard tasks and $B-y$ to the easy tasks, equally within each type. An easy task then fails with probability $\theta D_e/(B-y+\theta D_e)$ under standard $\theta$, and a hard task with probability $\theta D_h/(y+\theta D_h)$, so the expected number of failed tasks is
+\[
+\Phi_\theta(y;B)=\frac{\theta S_e^2}{B-y+\theta D_e}+\frac{\theta S_h^2}{y+\theta D_h}.
+\]
+The expected numbers of additional passes per additional token on the easy and on the hard tasks are
+\[
+\varepsilon_\theta(y;B)=\frac{\theta S_e^2}{(B-y+\theta D_e)^2},\qquad
+\eta_\theta(y;B)=\frac{\theta S_h^2}{(y+\theta D_h)^2},
+\]
+and $\partial\Phi_\theta/\partial B=-\varepsilon_\theta$, $\partial\Phi_\theta/\partial y=\varepsilon_\theta-\eta_\theta$.
+
+A team that knows the standard chooses $y_\theta(B)$ to minimize $\Phi_\theta(\cdot\,;B)$. By Lemma~T2, $y_\theta(B)=\max\{0,\sigma_hB-\theta\kappa\}$, which is positive exactly when $B$ exceeds the triage budget $B_\theta=D_e\,\underline x_\theta=\theta\kappa/\sigma_h$. Its value is $G_\theta(B)=M-\Phi_\theta(y_\theta(B);B)$ and its shadow price is $\lambda_\theta(B)=\varepsilon_\theta(y_\theta(B);B)$. The loss under standard $\theta$ from giving $y$ to the hard tasks is
+\[
+L_\theta(y;B)=\Phi_\theta(y;B)-\Phi_\theta\bigl(y_\theta(B);B\bigr)\ \ge0,
+\]
+and
+\begin{equation}\label{eq:Lder}
+\frac{\partial L_\theta}{\partial B}=\lambda_\theta(B)-\varepsilon_\theta(y;B),\qquad
+\frac{\partial L_\theta}{\partial y}=\varepsilon_\theta(y;B)-\eta_\theta(y;B).
+\end{equation}
+
+A team with belief $\pi$ minimizes $\pi\Phi_H+(1-\pi)\Phi_L$ by Lemma~T1(i); let $y^*(B)$ be its choice. It gives nothing to the hard tasks exactly when $B\le B_\pi:=D_e\,\underline x(\pi)$, and its shadow price is $\lambda(\pi;B)=\pi\varepsilon_H(y^*;B)+(1-\pi)\varepsilon_L(y^*;B)$. Adding and subtracting the two informed values gives
+\begin{equation}\label{eq:N}
+N(\pi;B)=\min_{y\in[0,B]}\ \bigl[\pi\,L_H(y;B)+(1-\pi)\,L_L(y;B)\bigr],
+\end{equation}
+attained at $y^*(B)$: the value of knowing the standard is the smallest expected loss that a team can achieve with one allocation for both standards. Since $G(\pi;\cdot)$ and the $G_\theta$ are continuously differentiable, so is $N$, with $N_B=\pi\lambda_H+(1-\pi)\lambda_L-\lambda(\pi;B)$.
+
+The three triage budgets are ordered, $B_L<B_\pi<B_H$. Indeed $\underline x(\pi)$ solves
+\[
+\bar q_x(\pi,x)=\frac{d_e}{d_h}\,\bar q_x(\pi,0).
+\]
+At $x=\underline x_L$ the lenient part of this equation holds with equality. The strict part holds with strict inequality in favor of the left side, because $\underline x_L<\underline x_H$ and $q_H'$ is decreasing. The left side is decreasing in $x$, so $\underline x(\pi)>\underline x_L$, and symmetrically $\underline x(\pi)<\underline x_H$.
+
+\section{The Value of Knowing the Standard}
+
+\begin{theorem}\label{th:N}
+In the baseline form, for every $\pi\in(0,1)$ there is a budget $\hat B_N\in(B_\pi,B_H)$ such that $N(\pi;\cdot)$ is zero on $[0,B_L]$, strictly increasing on $[B_L,\hat B_N]$ and strictly decreasing on $[\hat B_N,\infty)$, with $N(\pi;B)\to0$ as $B\to\infty$. Equivalently, the ratio
+\[
+H_\infty(B)=\frac{\pi\,\lambda_H(B)+(1-\pi)\,\lambda_L(B)}{\lambda(\pi;B)}
+\]
+of the expected shadow price of an informed team to the shadow price of an uninformed team equals one on $(0,B_L]$, exceeds one on $(B_L,\hat B_N)$ and is below one on $(\hat B_N,\infty)$.
+\end{theorem}
+
+In words, more tokens make the standard more valuable to know as long as the team is in the range where the standard decides whether the hard tasks are worth funding, and less valuable once tokens are plentiful enough that every reasonable allocation passes most tasks. The peak lies strictly below the budget at which a team that knows the standard to be strict begins to fund the hard tasks.
+
+The proof treats the two outer ranges directly and the middle range through the geometry of the two losses.
+
+\begin{lemma}[Outer ranges]\label{lem:outer}
+(a) $N(\pi;B)=0$ for $B\le B_L$. (b) On $[B_L,B_\pi]$, $N$ is strictly increasing, and $N_B>0$ on $(B_L,B_\pi]$. (c) On $[B_H,\infty)$, $N$ is strictly decreasing, $N_B<0$, and $N\to0$.
+\end{lemma}
+
+\begin{proof}
+For (a), every belief gives all tokens to the easy tasks when $B\le B_L$, so $y=0$ makes both losses zero.
+
+For (b), let $B_L<B\le B_\pi$. The team with belief $\pi$ chooses $y^*=0$, and $L_H(0;B)=0$ because $B<B_H$. Hence $N(\pi;B)=(1-\pi)L_L(0;B)$, and by \eqref{eq:Lder} its derivative is $(1-\pi)\bigl[\lambda_L(B)-\varepsilon_L(0;B)\bigr]$. Since $B>B_L$, the lenient informed team gives $y_L(B)>0$ to the hard tasks, and $\varepsilon_L(y;B)$ is strictly increasing in $y$, so $\lambda_L(B)=\varepsilon_L(y_L(B);B)>\varepsilon_L(0;B)$.
+
+For (c), write $P=B-y+\theta D_e$ and $P'=y+\theta D_h$, so that $P+P'=B+\theta D$. The identity
+\[
+\frac{S_e^2}{P}+\frac{S_h^2}{P'}-\frac{S^2}{P+P'}=\frac{(S_eP'-S_hP)^2}{P\,P'\,(P+P')}
+\]
+and $G_\theta(B)=M-\theta S^2/(B+\theta D)$ for $B\ge B_\theta$ give $L_\theta=\theta(S_eP'-S_hP)^2/\bigl(PP'(P+P')\bigr)$ for $B\ge B_\theta$. Describe an allocation by the number $u$ for which the easy tasks receive $\sigma_eB+u$ and the hard tasks $y=\sigma_hB-u$. Then $S_eP'-S_hP=-S(u-\theta\kappa)$, and for $B\ge B_H$ and both standards
+\[
+L_\theta=\frac{\theta\,S^2\,(u-\theta\kappa)^2}{(\sigma_eB+u+\theta D_e)\,(\sigma_hB-u+\theta D_h)\,(B+\theta D)} .
+\]
+With $u$ held fixed the numerator does not depend on $B$ and each factor of the denominator increases with $B$. Take $B_H\le B<B'$ and let $u$ describe the allocation of the team with belief $\pi$ at $B$. The same $u$ is feasible at $B'$, and $u$ cannot equal both $\theta_L\kappa$ and $\theta_H\kappa$, so by \eqref{eq:N}
+\[
+N(\pi;B')\le\pi L_H+(1-\pi)L_L\ \text{at }(u,B')\ <\ \pi L_H+(1-\pi)L_L\ \text{at }(u,B)=N(\pi;B).
+\]
+Dividing by $B'-B$ and letting $B'$ decrease to $B$ shows that $N_B(\pi;B)$ is at most the derivative in $B$ of the right-hand side at fixed $u$, which is negative. Finally $N\to0$ because both losses at a fixed $u$ tend to zero.
+\end{proof}
+
+For the middle range, look at the losses in the plane of budgets $B$ and tokens $y$ on the hard tasks. Let
+\[
+\mathcal D_L=\{(B,y):B>B_L,\ 0\le y<y_L(B)\},\qquad \mathcal D_H=\{(B,y):0<y<B<B_H\}.
+\]
+On $\mathcal D_L$ the hard tasks receive less than the lenient informed team would give them; on $\mathcal D_H$ they receive something although the strict informed team would give them nothing.
+
+\begin{lemma}[Iso-loss curves]\label{lem:level}
+(i) On $\mathcal D_L$, $L_L$ is strictly increasing in $B$ and strictly decreasing in $y$. Its level curves are graphs of functions $y=\iota(B)$ with $0<\iota'<1$ and $\iota''<0$.
+
+(ii) On $\mathcal D_H$, $L_H$ is strictly decreasing in $B$ and strictly increasing in $y$. Its level curves are graphs of functions $y=\iota(B)$ with $0<\iota'<1$ and $\iota''>0$.
+\end{lemma}
+
+Under the lenient standard the loss comes from underfunding the hard tasks, and to keep it constant as the budget grows the hard tasks must fall further behind in relative terms. Under the strict standard the loss comes from funding the hard tasks at all; it vanishes as $B$ approaches $B_H$, where the strict informed team starts funding them itself, so keeping it constant takes ever more misallocated tokens.
+
+\begin{proof}
+Part (i). In $y$, $\varepsilon_L$ is strictly increasing and $\eta_L$ strictly decreasing, and both equal $\lambda_L(B)$ at $y=y_L(B)$. Hence $\varepsilon_L<\lambda_L(B)<\eta_L$ on $\mathcal D_L$, and by \eqref{eq:Lder} $\partial L_L/\partial B>0>\partial L_L/\partial y$. The level curve through a point is the graph of a function $\iota$ with
+\[
+\iota'=\frac{\lambda_L-\varepsilon_L}{\eta_L-\varepsilon_L}\in(0,1).
+\]
+Put $\alpha=(B-y+\theta_LD_e)/S_e$, $\beta=(y+\theta_LD_h)/S_h$ and $t=\beta/\alpha$. Then $\varepsilon_L=\theta_L/\alpha^2$, $\eta_L=\theta_L/\beta^2$, and $\lambda_L=\theta_L/(\sigma_e\alpha+\sigma_h\beta)^2$ because $B+\theta_LD=S_e\alpha+S_h\beta$. On $\mathcal D_L$ we have $t\in(0,1)$, and using $1-(\sigma_e+\sigma_ht)^2=\sigma_h(1-t)(1+\sigma_e+\sigma_ht)$,
+\[
+\iota'=\frac{(\sigma_e+\sigma_ht)^{-2}-1}{t^{-2}-1}=g(t),\qquad g(t)=\frac{\sigma_h\,t^2\,(1+\sigma_e+\sigma_ht)}{(1+t)\,(\sigma_e+\sigma_ht)^2}.
+\]
+The function $g$ is strictly increasing on $(0,1)$:
+\[
+\frac{g'(t)}{g(t)}=\frac{2\sigma_e}{t(\sigma_e+\sigma_ht)}-\frac{2\sigma_e}{(1+t)(1+\sigma_e+\sigma_ht)}>0 .
+\]
+Along the level curve,
+\[
+\frac{d\log t}{dB}=\frac{\iota'}{y+\theta_LD_h}-\frac{1-\iota'}{B-y+\theta_LD_e},
+\]
+which is negative if and only if $\iota'/(1-\iota')<(y+\theta_LD_h)/(B-y+\theta_LD_e)=\sigma_ht/\sigma_e$, that is, if and only if $g(t)<\sigma_ht/(\sigma_e+\sigma_ht)$. This inequality reads $t(1+\sigma_e+\sigma_ht)<(1+t)(\sigma_e+\sigma_ht)$, and the right side minus the left side equals $\sigma_e(1-t)>0$. So $t$ strictly decreases along the level curve, and so does $\iota'=g(t)$.
+
+Part (ii). For $B<B_H$ the strict informed team gives everything to the easy tasks, so $\lambda_H(B)=\varepsilon_H(0;B)=\theta_HS_e^2/(B+\theta_HD_e)^2$, and $\lambda_H(B)>1/(\theta_Hd_h)$, the rate on an untouched hard task; the last inequality rearranges to $B<B_H$. Put
+\[
+a=\frac{S_e}{B-y+\theta_HD_e},\qquad b=\frac{S_h}{y+\theta_HD_h},\qquad c=\frac{S_e}{B+\theta_HD_e},
+\]
+so that $\varepsilon_H=\theta_Ha^2$, $\eta_H=\theta_Hb^2$ and $\lambda_H=\theta_Hc^2$. On $\mathcal D_H$, $a>c$ because $y>0$, and $c>b$ because $\eta_H\le\theta_HS_h^2/(\theta_HD_h)^2=1/(\theta_Hd_h)<\lambda_H$. By \eqref{eq:Lder}, $\partial L_H/\partial B<0<\partial L_H/\partial y$, and the level curve through a point is the graph of a function $\iota$ with
+\[
+\iota'=\frac{\varepsilon_H-\lambda_H}{\varepsilon_H-\eta_H}=\frac{a^2-c^2}{a^2-b^2}\in(0,1).
+\]
+Fix a point $(B_0,y_0)$ on the curve, let $p=\iota'(B_0)$, and consider along the curve
+\[
+\varphi(B)=\lambda_H(B)-(1-p)\,\varepsilon_H-p\,\eta_H=(\varepsilon_H-\eta_H)\,\bigl(p-\iota'(B)\bigr).
+\]
+Then $\varphi(B_0)=0$ and $\varphi'(B_0)=-(\varepsilon_H-\eta_H)\,\iota''(B_0)$, so $\iota''(B_0)>0$ if and only if $\varphi'(B_0)<0$. Along the curve at $B_0$ the easy tasks gain $1-p$ and the hard tasks $p$ per unit of budget, so
+\[
+\varphi'(B_0)=-\frac{2\lambda_H}{B+\theta_HD_e}+\frac{2(1-p)^2\varepsilon_H}{B-y+\theta_HD_e}+\frac{2p^2\eta_H}{y+\theta_HD_h}
+=-\frac{2\theta_H}{S_e}\Bigl[c^3-(1-p)^2a^3-p^2b^3\,\frac{S_e}{S_h}\Bigr].
+\]
+The three denominators satisfy $S_e/c-S_e/a=y$ and $S_h/b=y+\theta_HD_h$, hence $S_e(1/c-1/a)=S_h(1/b-\theta_HD_h/S_h)$. Since $\lambda_H>1/(\theta_Hd_h)$ means $1/c<\theta_H\sqrt{d_h}=\theta_HD_h/S_h$, we get
+\[
+\frac{S_e}{S_h}<\frac{1/b-1/c}{1/c-1/a}=\frac{a\,(c-b)}{b\,(a-c)} .
+\]
+Substituting this bound and $1-p=(c^2-b^2)/(a^2-b^2)$, $p=(a^2-c^2)/(a^2-b^2)$,
+\[
+c^3-(1-p)^2a^3-p^2b^3\,\frac{S_e}{S_h}>\frac{c^3(a^2-b^2)^2-a^3(c^2-b^2)^2-a\,b^2(c-b)(a-c)(a+c)^2}{(a^2-b^2)^2}.
+\]
+The numerator factors as
+\[
+(a-b)(a-c)\bigl[a^2\,(b^3-b^2c+c^3)+a\,b^3c+a\,b\,c^3+b^3c^2\bigr],
+\]
+which is positive for $0<b<c<a$ because $b^3-b^2c+c^3=b^3+c\,(c^2-b^2)>0$. Hence $\varphi'(B_0)<0$.
+\end{proof}
+
+\begin{proof}[Proof of Theorem~\ref{th:N}]
+By Lemma~\ref{lem:outer} it remains to show that $N_B$ has exactly one zero in $(B_\pi,B_H)$, since $N_B(B_\pi)>0>N_B(B_H)$ and $N_B$ is continuous.
+
+On $(B_\pi,B_H)$ write $\ell(y,B)=\pi L_H(y;B)+(1-\pi)L_L(y;B)$. Here $L_H=\Phi_H(y;B)-\Phi_H(0;B)$ and $L_L=\Phi_L(y;B)-\theta_LS^2/(B+\theta_LD)$ are smooth, $\ell$ is strictly convex in $y$, and the minimizer $y^*(B)$ is interior and satisfies the first-order condition
+\begin{equation}\label{eq:foc}
+\pi\,(\varepsilon_H-\eta_H)=(1-\pi)\,(\eta_L-\varepsilon_L).
+\end{equation}
+By the implicit function theorem $y^*$ is continuously differentiable, so $N(\pi;B)=\ell(y^*(B),B)$ is twice continuously differentiable, with
+\begin{equation}\label{eq:NB}
+N_B=-\pi\,(\varepsilon_H-\lambda_H)+(1-\pi)\,(\lambda_L-\varepsilon_L)\quad\text{at }y=y^*(B)
+\end{equation}
+by \eqref{eq:Lder}. The point $(B,y^*(B))$ lies in $\mathcal D_H$, so $\varepsilon_H>\eta_H$ there, and then \eqref{eq:foc} gives $\eta_L>\varepsilon_L$, so it also lies in $\mathcal D_L$.
+
+Let $B_0\in(B_\pi,B_H)$ be a zero of $N_B$ and $y_0=y^*(B_0)$. Dividing \eqref{eq:NB} by \eqref{eq:foc} shows that the level curve $\iota_L$ of $L_L$ and the level curve $\iota_H$ of $L_H$ through $(B_0,y_0)$ have the same slope there; call it $p$. Let $\gamma(B)=y_0+p\,(B-B_0)$ be their common tangent line. By \eqref{eq:N}, $N(\pi;B)\le\ell(\gamma(B),B)$ near $B_0$ with equality at $B_0$, and both sides are twice differentiable, so
+\[
+N_{BB}(B_0)\le\frac{d^2}{dB^2}\,\ell\bigl(\gamma(B),B\bigr)\Big|_{B_0}.
+\]
+For either standard, differentiating $L_\theta(\iota_\theta(B),B)=\text{constant}$ twice and comparing with the second derivative of $L_\theta(\gamma(B),B)$, which has the same first-order terms because $\gamma'=\iota_\theta'$ at $B_0$ and has $\gamma''=0$, gives
+\[
+\frac{d^2}{dB^2}\,L_\theta\bigl(\gamma(B),B\bigr)\Big|_{B_0}=-\frac{\partial L_\theta}{\partial y}\,\iota_\theta''(B_0).
+\]
+By Lemma~\ref{lem:level}, $\partial L_L/\partial y<0$ and $\iota_L''<0$, while $\partial L_H/\partial y>0$ and $\iota_H''>0$. Both second derivatives are negative, hence $N_{BB}(B_0)<0$.
+
+So every zero of $N_B$ in $(B_\pi,B_H)$ is a strict local maximum of $N$. Two such zeros would enclose a local minimum, which would be a zero of $N_B$ with $N_{BB}\ge0$. Hence there is exactly one zero, $\hat B_N$. The statement about $H_\infty$ follows from $N_B=\lambda(\pi;B)\,[H_\infty(B)-1]$.
+\end{proof}
+
+\section{Token Demand with and without Knowledge of the Standard}
+
+Theorem~\ref{th:N} gives an unconditional version of Proposition~T6 for a team that will be told the standard before it allocates. Suppose a team values a pass at $v$ and buys tokens at a price $p<vW'(0+)$ before knowing the standard. Without knowledge it buys $B^E$, the maximizer of $vG(\pi;B)-pB$. If it will be told the standard before allocating, it buys $B^\infty$, the maximizer of $v[\pi G_H(B)+(1-\pi)G_L(B)]-pB$.
+
+\begin{corollary}\label{cor:demand}
+In the baseline form, $B^\infty>B^E$ if $B_L<B^E<\hat B_N$, $B^\infty<B^E$ if $B^E>\hat B_N$, and $B^\infty=B^E$ if $B^E\le B_L$ or $B^E=\hat B_N$.
+\end{corollary}
+
+\begin{proof}
+Both objectives are strictly concave and continuously differentiable. At $B^E$ the derivative of the second objective is $v[\pi\lambda_H+(1-\pi)\lambda_L]-p=v\,N_B(\pi;B^E)$, because $v\lambda(\pi;B^E)=p$. A strictly concave function with a positive derivative at $B^E$ is maximized above $B^E$, with a negative derivative below, and with a zero derivative at $B^E$. Theorem~\ref{th:N} gives the sign of $N_B$.
+\end{proof}
+
+Knowing the evaluator's standard raises the demand for tokens of a team whose demand is otherwise small and lowers the demand of a team whose demand is otherwise large. This is the benchmark that any costly learning protocol approaches from below.
+
+\section{The Premium and the Value of Knowing the Standard}
+
+This section holds under Assumptions 1 and 2 alone. Let $N(\pi;B)$ be defined as in Section 1 for the task numbers $(n_e,n_h)$; it is nonnegative by Lemma~T1(iv). Recall $q_\theta^I=q_\theta(b^I)$, $\bar q^I$ and $s$ from the theory notes, and let
+\[
+\rho=\sqrt{q_H^I\,q_L^I}+\sqrt{(1-q_H^I)(1-q_L^I)},\qquad
+\chi=1-\bar q^I+\frac{s}{d_e}\,\bar q_x(\pi_0,0).
+\]
+By the Cauchy--Schwarz inequality $\rho<1$, because $q_H^I\ne q_L^I$. In the baseline form $\rho=2r^{1/4}/(1+\sqrt r)$.
+
+\begin{proposition}\label{prop:sandwich}
+For every $B>0$ and every affordable $\tau\ge1$,
+\[
+N(\pi_0;B)-\tfrac12\,K\,\rho^{\tau}-\tau\,\chi\ \le\ V(\tau;B)-W(B)\ \le\ R(B)\ \le\ N(\pi_0;B).
+\]
+\end{proposition}
+
+\begin{proof}
+The last inequality is the bound of Proposition~T2, and the middle one is the definition of $R$.
+
+For the first, write $G_\theta^\tau$ and $N^\tau$ for the informed value and the value of knowing the standard with $(n_e-\tau,n_h)$ tasks. By definition $G(\pi;\cdot)=\pi G_H+(1-\pi)G_L-N(\pi;\cdot)$ for either set of tasks. Substituting this into the definition of $V(\tau;B)$ and using that the posterior averages to the prior,
+\[
+V(\tau;B)-W(B)=N(\pi_0;B)-\sum_wP_\tau(w)\,N^\tau\bigl(\pi_\tau(w);B-\tau s\bigr)-\Bigl[\sum_\theta\pi_{0,\theta}\bigl(G_\theta(B)-G_\theta^\tau(B-\tau s)\bigr)-\tau\bar q^I\Bigr].
+\]
+A team with belief $\pi$ can use the allocation that is optimal under the lenient standard; this loses nothing if the standard is lenient and at most the number of tasks if it is strict, so $N^\tau(\pi;\cdot)\le\pi K$. Using the allocation that is optimal under the strict standard gives $N^\tau(\pi;\cdot)\le(1-\pi)K$. Hence the sum over $w$ is at most $K\sum_w\min\{\pi_0P_\tau^H(w),(1-\pi_0)P_\tau^L(w)\}$, where $P_\tau^\theta$ is the binomial distribution of $w$ under $\theta$. Since $\min\{x,z\}\le\sqrt{xz}$ and $\sqrt{\pi_0(1-\pi_0)}\le\frac12$, this is at most $\frac12K\sum_w\sqrt{P_\tau^H(w)P_\tau^L(w)}$, and by the binomial theorem the last sum equals $\rho^\tau$.
+
+For the bracket, take the informed team's optimal allocation of $B$ over all tasks and delete $\tau$ easy tasks. This loses at most $\tau$ passes and leaves an allocation that is feasible for the remaining tasks, so $G_\theta(B)\le\tau+G_\theta^\tau(B)$. The function $G_\theta^\tau$ is concave with slope at most $q_\theta'(0)/d_e$, the largest rate at which a token can raise a pass probability, so $G_\theta^\tau(B)-G_\theta^\tau(B-\tau s)\le\tau s\,q_\theta'(0)/d_e$. Averaging over $\theta$, the bracket is at most $\tau+\tau s\,\bar q_x(\pi_0,0)/d_e-\tau\bar q^I=\tau\chi$.
+\end{proof}
+
+\begin{corollary}[Large teams]\label{cor:large}
+Fix shares $\nu_e,\nu_h>0$ with $\nu_e+\nu_h=1$ and a budget per task $\beta>0$, and consider teams with $n_e=\nu_eK$, $n_h=\nu_hK$ and $B=\beta K$. Let $n(\beta)=N(\pi_0;\beta)$ computed with task numbers $(\nu_e,\nu_h)$, and let $\tau_K$ be the smallest integer with $\rho^{\tau_K}\le1/K$. Whenever $\tau_K$ is affordable at $\beta K$,
+\[
+0\le n(\beta)-\frac{R(\beta K)}{K}\le\frac{1}{K}\Bigl[\frac12+\chi\Bigl(1+\frac{\ln K}{\ln(1/\rho)}\Bigr)\Bigr],
+\]
+and $\tau_K$ is affordable once $K$ is large, so $R(\beta K)/K\to n(\beta)$ as $K\to\infty$ along values for which the task numbers are integers. In the baseline form $n$ is single-peaked in $\beta$ by Theorem~\ref{th:N}.
+\end{corollary}
+
+\begin{proof}
+The commit problem is homogeneous of degree one in the budget and the task numbers, so $N(\pi_0;\beta K)$ with task numbers $(\nu_eK,\nu_hK)$ equals $K\,n(\beta)$. Apply Proposition~\ref{prop:sandwich} with $\tau=\tau_K\le1+\ln K/\ln(1/\rho)$ and divide by $K$.
+\end{proof}
+
+\begin{remark}
+The constants are crude. At the baseline $\rho=0.8$, $\chi=3.475$ and $\tau_K=21$, and the bound is about $76$ passes while $N$ never exceeds $4.2$, so Proposition~\ref{prop:sandwich} says nothing at $K=100$. The true gap $N-R$ at the baseline is between $0.3$ and $1.8$ (Table~\ref{tab:NR}). The bound charges every learning task a full pass plus its tokens at the highest possible shadow price.
+\end{remark}
+
+\section{Integer Learning Lengths: The Exact Premium Can Have Two Peaks}
+
+By Lemma~T5 the slope of $V$ can only jump upward where the optimal learning length changes. On the falling side of the premium the optimal length decreases with the budget. Suppose it drops from $\tau+1$ to $\tau$ at the budget $B^\times$, and that the premium of the branch $\tau+1$ peaks at $P_{\tau+1}$ and that of the branch $\tau$ at $P_\tau$. If $P_{\tau+1}<B^\times<P_\tau$, the premium falls from $P_{\tau+1}$ to $B^\times$ and rises again from $B^\times$ to $P_\tau$. At the baseline the branch peaks are ordered in this direction: $P_9=115.99$, $P_8=117.99$, $P_7=120.22$, $P_6=121.77$, $P_5=123.48$. Whether a kink falls between two of them depends on the parameters.
+
+\begin{example}\label{ex:scallop}
+Take the baseline parameters with the evaluation fee $c=0.205$ in place of $0.2$. The branch $\tau=7$ peaks at $B=120.354$ and the branch $\tau=6$ at $B=121.885$; the two branches cross at $B^\times=121.452$, and every other branch lies at least $0.009$ below them on this range.
+\begin{center}
+\small
+\begin{tabular}{@{}lcccccc@{}}
+\toprule
+$B$ & 120.000 & 120.354 & 121.000 & 121.452 & 121.885 & 122.500 \\
+\midrule
+$\tau^*$ & 7 & 7 & 7 & 7 and 6 & 6 & 6 \\
+$R$ & 2.769841 & 2.769860 & 2.769799 & 2.769686 & 2.769713 & 2.769659 \\
+$H$ & 1.0009 & 1.0000 & 0.9984 & 0.9974 and 1.0010 & 1.0000 & 0.9985 \\
+\bottomrule
+\end{tabular}
+\end{center}
+The premium has local maxima at $120.354$ and $121.885$ and a local minimum at the kink. At $c=0.200$ the branches cross at $122.77$, to the right of both peaks, and at $c=0.210$ they cross at $120.12$, to the left of both; in those two cases the premium is single-peaked.
+\end{example}
+
+The second rise in the example is $0.00003$ on a premium of $2.77$. It is nevertheless a counterexample: the premium of the exact model is not single-peaked for all parameters, and since the peak moves from one branch to the next as any parameter varies, such values are not isolated.
+
+What survives is the following. Let $\hat B$ be the largest budget such that $R$ is nondecreasing on $[0,\hat B]$, as in the theory notes, and let $\check B$ be the smallest budget such that $R$ is nonincreasing on $[\check B,\infty)$; it is finite by Proposition~T2. Then $\hat B\le\check B$, with equality exactly when the premium is single-peaked. Proposition~T6 already has the right form: part (i) applies when $B^E\le\hat B$ and part (ii) when $B^E\ge\check B$. In Example~\ref{ex:scallop}, $\hat B=120.35$ and $\check B=121.89$. The sentence in Proposition~T6 that begins ``Consequently, if the premium is single-peaked'' should be read with these two thresholds.
+
+\section{What Is Proved about the Exact Premium}
+
+This section holds under Assumptions 1 and 2. For an affordable $\tau$ with $1\le\tau<n_e$, the slope formula of Lemma~T4 gives
+\begin{align}
+\frac{\partial V(\tau;B)}{\partial B}-W'(B)
+&=\Bigl[\sum_wP_\tau(w)\,\lambda\bigl(\pi_\tau(w);B-\tau s,n_e-\tau,n_h\bigr)-\lambda\bigl(\pi_0;B-\tau s,n_e-\tau,n_h\bigr)\Bigr]\notag\\
+&\quad+\Bigl[\lambda\bigl(\pi_0;B-\tau s,n_e-\tau,n_h\bigr)-\lambda\bigl(\pi_0;B,n_e,n_h\bigr)\Bigr].\label{eq:two}
+\end{align}
+The first bracket is the information effect: beliefs are dispersed, at a given budget and set of tasks. The second is the resource effect: at the prior belief, $\tau$ easy tasks and $\tau s$ tokens are removed.
+
+\begin{lemma}[Resource effect]\label{lem:resource}
+Let $b_e(\pi;B)$ be the tokens that an easy task receives when a team with belief $\pi$ allocates $B$ over $(n_e,n_h)$ tasks. For $1\le\tau<n_e$ with $\tau s\le B$,
+\[
+\lambda\bigl(\pi;B-\tau s,n_e-\tau,n_h\bigr)\ \ge\ \lambda\bigl(\pi;B,n_e,n_h\bigr)\quad\text{if and only if}\quad b_e(\pi;B)\le s,
+\]
+with equality in one if and only if in the other.
+\end{lemma}
+
+\begin{proof}
+Remove $\tau$ easy tasks from the optimal allocation together with the $\tau b_e$ tokens they receive. The efforts on the remaining tasks satisfy the first-order conditions of Lemma~T1 for the budget $B-\tau b_e$ and the tasks $(n_e-\tau,n_h)$ with the same multiplier, so $\lambda(\pi;B-\tau b_e,n_e-\tau,n_h)=\lambda(\pi;B,n_e,n_h)$. The shadow price is strictly decreasing in the budget, and $B-\tau s\le B-\tau b_e$ if and only if $b_e\le s$.
+\end{proof}
+
+A learning task uses $s$ tokens. If an ordinary easy task would receive less than that, running learning tasks leaves the other tasks short of tokens and raises the shadow price; if it would receive more, it leaves them better funded and lowers it.
+
+\begin{lemma}[Information effect below the prior's triage budget]\label{lem:info}
+Fix task numbers $(m_e,m_h)$ and a budget $R\le m_ed_e\,\underline x(\pi_0)$, at which a team with the prior belief gives nothing to the hard tasks. For every distribution of beliefs with finite support and mean $\pi_0$, the expected shadow price is at least $\lambda(\pi_0;R,m_e,m_h)$, strictly so if some belief in the support gives the hard tasks positive effort.
+\end{lemma}
+
+\begin{proof}
+Let $\lambda^e(\pi)=\bar q_x\bigl(\pi,R/(m_ed_e)\bigr)/d_e$ be the rate on an easy task when all tokens go to the easy tasks. It is affine in $\pi$. For every belief the easy tasks receive at most $R/m_e$ each and $\bar q_x$ is decreasing, so $\lambda(\pi;R,m_e,m_h)\ge\lambda^e(\pi)$, with equality if and only if the hard tasks receive nothing. At $\pi_0$ there is equality. Averaging, the expected shadow price is at least the average of $\lambda^e$, which is $\lambda^e(\pi_0)=\lambda(\pi_0;R,m_e,m_h)$.
+\end{proof}
+
+\begin{proposition}[Rising side]\label{prop:rise}
+Let $B^{\uparrow}=n_e\min\{s,\ d_e\,\underline x(\pi_0)\}$. For every $B\le B^{\uparrow}$ and every affordable $\tau$ with $1\le\tau<n_e$,
+\[
+\frac{\partial V(\tau;B)}{\partial B}\ \ge\ W'(B).
+\]
+Consequently $R$ is nondecreasing on $[0,B^{\uparrow}]$, and $H\ge1$ wherever it is defined there.
+\end{proposition}
+
+\begin{proof}
+Use \eqref{eq:two}. An easy task receives at most $B/n_e\le s$ from the team with the prior belief, so the resource effect is nonnegative by Lemma~\ref{lem:resource}. Let $\mu=\min\{s,d_e\underline x(\pi_0)\}$. Then $B-\tau s\le n_e\mu-\tau\mu\le(n_e-\tau)\,d_e\,\underline x(\pi_0)$, so Lemma~\ref{lem:info} applies to the tasks $(n_e-\tau,n_h)$ at the budget $B-\tau s$ and to the posterior, whose mean is the prior, and the information effect is nonnegative.
+
+For the consequence, take $B<B'\le B^{\uparrow}$ and let $\tau^*$ be optimal at $B$. If $\tau^*=0$ then $R(B)=0\le R(B')$. Otherwise $\tau^*<n_e$, because the length $n_e$ is affordable only at budgets of at least $n_es\ge B^{\uparrow}>B$. The branch $V(\tau^*;\cdot)-W$ is nondecreasing on $[B,B']$, so $R(B')\ge V(\tau^*;B')-W(B')\ge R(B)$.
+\end{proof}
+
+At the baseline $B^{\uparrow}=30.14$, which is the prior's triage budget, and the team starts learning at about $25$. The proposition therefore covers only the first part of the rise. Beyond $B^{\uparrow}$ the picture at the baseline is as follows. The resource effect is positive up to $B=43.2$, where an ordinary easy task receives exactly $s=0.7$ tokens, and negative afterwards. The premium nevertheless keeps rising until about $120$, carried by the information effect. Above the prior's triage budget the sign of the information effect is not covered by Lemma~\ref{lem:info}, and this is where the proof stops.
+
+\section{Numbers at the Baseline}
+
+The triage budgets are $B_L=18.75$, $B_{\pi_0}=30.14$ and $B_H=300$. The value of knowing the standard peaks at $\hat B_N=148.97$ with $N=4.11$; the premium peaks at $\hat B=120.2$ with $R=2.774$. The theory notes give the peak as approximately $122$, which was read off a grid of step two.
+
+\begin{table}[htbp]
+\centering
+\small
+\begin{tabular}{@{}lccccccccc@{}}
+\toprule
+$B$ & 26 & 40 & 60 & 100 & 122 & 160 & 250 & 400 & 600 \\
+\midrule
+Premium $R$ & 0.03 & 0.92 & 1.91 & 2.71 & 2.77 & 2.61 & 1.73 & 0.63 & 0.11 \\
+Value of knowing $N$ & 0.31 & 1.46 & 2.63 & 3.78 & 4.03 & 4.10 & 3.48 & 2.08 & 1.12 \\
+Ratio $H$ & 1.12 & 1.27 & 1.19 & 1.05 & 1.00 & 0.92 & 0.83 & 0.87 & 0.95 \\
+Ratio $H_\infty$ & 1.24 & 1.31 & 1.24 & 1.11 & 1.06 & 0.98 & 0.84 & 0.81 & 0.86 \\
+\bottomrule
+\end{tabular}
+\caption{The premium and the value of knowing the standard at the baseline.}
+\label{tab:NR}
+\end{table}
+
+The two ratios have the same shape. Costly learning captures between one tenth and three quarters of the value of knowing the standard, and its premium peaks earlier.
+
+Checks. The script \texttt{premium\_shape\_checks.py} confirms the following; none of it enters a proof. The loss representation \eqref{eq:N} agrees with a direct maximization to eight digits. In 3000 random draws of the parameters and of a point in each domain, the level curves of Lemma~\ref{lem:level} have the stated curvature, both by finite differences and by the exact criteria used in the proof. In 400 random draws, $N_B$ is positive and then negative with a single change of sign, the change lies in $(B_\pi,B_H)$, and $N_{BB}<0$ there. On a grid over $[1,B^{\uparrow}]$ and all affordable lengths, the smallest value of $\partial V(\tau;B)/\partial B-W'(B)$ is $0.005$. The factorization at the end of the proof of Lemma~\ref{lem:level} was verified with a computer algebra system.
+
+\section{Routes That Fail and What Remains Open}
+
+Three natural routes to the results above do not work, and are recorded so that they are not tried again. Each was ruled out by an explicit example.
+
+The shadow price $\lambda(\pi;B)$ is not concave in the belief at large budgets, so Jensen's inequality does not sign the information effect there. Concavity holds to leading order as $B\to\infty$ and fails at some parameter values for budgets a few times $B_H$.
+
+The ratio $H_\infty$ is not monotone on each of the three ranges cut out by $B_L$, $B_\pi$ and $B_H$. Only its position relative to one is as stated in Theorem~\ref{th:N}.
+
+The loss from acting as if the standard were a fixed value between $\theta_L$ and $\theta_H$ is not quasi-concave in the budget; it can have one hump from each state. The minimum over such rules is $N$, but \eqref{eq:N} cannot be turned into a minimum of quasi-concave functions in this way.
+
+The following remain open, in the order in which we would attack them.
+
+The falling side for finite teams. We lack an explicit budget beyond which $R$ is nonincreasing, other than the exit bound. By \eqref{eq:two} and Lemma~\ref{lem:resource} what is missing is the sign of the information effect when the posterior is not degenerate and the budget is above the prior's triage budget. The tangent-line argument in the proof of Theorem~\ref{th:N} bounds the second derivative of a minimum from above; with a nondegenerate posterior the informed side is itself a minimum, and the argument bounds it in the wrong direction.
+
+The branches. At the baseline each branch premium $V(\tau;\cdot)-W$ is single-peaked and the peaks decrease in $\tau$. Proving both would describe the exact premium completely: single-peaked up to one small dip at each change of the learning length near the top.
+
+The scope of Theorem~\ref{th:N}. The proof uses the ratio form in three places: the closed forms of Lemma~T2 and the two curvature computations of Lemma~\ref{lem:level}. The structure of the argument, a minimum of two losses whose level curves bend in opposite directions, does not depend on the ratio form, and an extension to Assumption 2 with a suitable curvature condition looks feasible. More than two levels of difficulty and a continuous prior are untouched.
+
+The allocation across teams in the benchmark with free information. With both teams informed, the planner's problem is concave and Theorem~\ref{th:N} gives the sign of $H_\infty-1$; whether this delivers the pairwise comparison that Corollary~T3 needs has not been examined.
+
+\end{document}

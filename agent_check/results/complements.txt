@@ -1,0 +1,3 @@
+                          standard not known   standard known
+difficulty not observed        39.6                 39.6
+difficulty observed            39.8                 43.6

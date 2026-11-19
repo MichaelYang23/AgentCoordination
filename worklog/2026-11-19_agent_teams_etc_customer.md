@@ -140,7 +140,7 @@ Baseline（v₁/v₂=2）下在 a^E 处的两项：
 
 WITS 的协议（前 τ 期探测，之后固定出价）就是 ETC，只是没有这么叫。问题在于 bidding 里每次拍卖后都免费看到输赢，agent 完全可以一直学下去。"学完就不再更新"是我们加的假设，所以 reviewer 会问为什么不用 bandit。`bandit_check` 当时的回答是稳健性（主要区间内方向一致）加文献（两个已知假设时 ETC 只损失常数）。
 
-用 ETC 重读 bidding 还得到三个发现，记在 Project 的 `agent_teams_notes.md` 第 2 节：
+用 ETC 重读 bidding 还得到三个发现，记在 [`2026-11-15_agent_teams_notes.md`](2026-11-15_agent_teams_notes.md) 第 2 节：
 
 - Exact 模型里 K 每翻倍 τ\* 正好加 3，对应 Chernoff information 而不是 KL；smoothed 模型在 K 方向的斜率差了约 3.7 倍。
 - 学习窗口的上边是 ETC 现象（探测出价被压在 b^I），下边不是。
@@ -150,7 +150,7 @@ WITS 的协议（前 τ 期探测，之后固定出价）就是 ETC，只是没�
 
 | ETC 的组成部分 | 在 bidding 里 | 在 agent team 里 |
 |---|---|---|
-| 学习排在最前面 | 假设 | 推出来的。早期反馈的代价不随时间变，而它对之后所有 task 都有用，所以越早越好（Project 里 `agent_theory.tex` 的 Proposition 3） |
+| 学习排在最前面 | 假设 | 推出来的。早期反馈的代价不随时间变，而它对之后所有 task 都有用，所以越早越好（`theory/agent_teams/agent_theory.tex` 的 Proposition 3） |
 | 学完之后不再更新 | 假设，反馈其实一直有 | 推出来的。早期反馈之外没有别的反馈，没有东西可以更新 |
 | 学几个事先定好 | 假设 | 仍然是假设。在"早期反馈只有一轮"时它是最优的；否则看结果再停更好 |
 
@@ -356,7 +356,7 @@ Pilot 用固定的 effort b^I 仍然是一个简化。
 
 ## 7. 证明状态
 
-以下"已证"都指 Project 里的草稿，待 Mike 核对。
+以下"已证"都指 [`theory/agent_teams/`](../theory/agent_teams/) 里的草稿，待 Mike 核对。
 
 | 结论 | 状态 |
 |---|---|
@@ -397,7 +397,7 @@ Baseline 下的单个 team（0/1，ETC）：
 5. **信息改变做法本身。** 模型里信息只改变分配，这是 few-shot 那个质疑真正指向的地方。
 6. **两个 team 面对同一个 customer。** 谁替大家学。
 7. **Bidding 和 agent team 的统一模型。** 现在的说法是同一个骨架的两个实例，嵌套两者的一般形式还没有写。
-8. **把推导和脚本放进 repo。** 见第 9 节。
+8. **同步 `agent_model_section.tex`。** 论文体的 model section 比 `agent_theory.tex` 早一版，同步之后再放进 repo。
 
 ---
 
@@ -405,16 +405,29 @@ Baseline 下的单个 team（0/1，ETC）：
 
 **Baseline 参数**：θ_L=½，θ_H=8，π₀=½，b^I=2，K=100，easy 和 hard 各 50 个，d_e=¼，d_h=4，c=0.2，所以一个 pilot task 用 s=0.7 个 token，在 lenient 和 strict 下的通过率是 0.8 和 0.2。两个 team 时 v₁/v₂=2。
 
-**详细推导在哪里**。以下文件在 claude.ai 的 Project "Agent Coordination" 里，还不在这个 repo：
+**详细推导在哪里**。以下文件在 11-19 当天放进了这个 repo，取自写入 claude.ai 的 Project "Agent Coordination" 时所用的同一份文件：
 
-| 文件 | 内容 |
+| Repo 里的位置 | Project 里的名字 | 内容 |
+|---|---|---|
+| [`theory/agent_teams/agent_coordination_note`](../theory/agent_teams/agent_coordination_note.pdf)（`.tex` 和 `.pdf`） | `claude/agent_coordination_note.tex` | 给 advisor 的 note：背景、研究问题、设定、单 team 问题、orchestrator 问题。不含推导结果，也还没有 customer 设定 |
+| [`theory/agent_teams/agent_theory`](../theory/agent_teams/agent_theory.pdf) | `claude/agent_theory.tex` | Agent 模型的数学结构、推导和证明状态 |
+| [`theory/agent_teams/agent_premium_shape`](../theory/agent_teams/agent_premium_shape.pdf) | `claude/agent_premium_shape.tex` | Premium 的形状：N 单峰的证明、反例、上升段 |
+| [`worklog/2026-11-15_agent_teams_notes.md`](2026-11-15_agent_teams_notes.md) | `claude/agent_teams_notes.md` | 11-14 至 11-15 的讨论记录，包括更正记录。它的文件索引和脚本一节写的还是 Project 里的路径 |
+
+**本文数字的来源**。脚本在 [`agent_check/`](../agent_check/README.md)，每个脚本 11-19 的完整输出在 `agent_check/results/`：
+
+| 本文的位置 | 脚本 |
 |---|---|
-| `claude/agent_coordination_note.tex` | 给 advisor 的 note：背景、研究问题、设定、单 team 问题、orchestrator 问题。不含推导结果，也还没有 customer 设定 |
-| `claude/agent_theory.tex` | Agent 模型的数学结构、推导和证明状态 |
-| `claude/agent_premium_shape.tex` | Premium 的形状：N 单峰的证明、反例、上升段 |
-| `claude/agent_teams_notes.md` | 11-14 至 11-15 的讨论记录，包括更正记录 |
+| 2.2 节的 2×2 表 | `complements.py` |
+| 2.2 节"不学习得 38.89" | `homogeneous_and_cap.py` |
+| 2.2 节方向判据的表 | `regimes.py` |
+| 3.3 节的表和两条路径 | `adaptive_stop.py`、`adaptive_stop_states.py` |
+| 5.3 节的路径和逐次新增价值 | `diminishing.py`、`advisor_c.py` |
+| 5.4 节的分数和四档表 | `satisfaction_score.py`、`report_update.py` |
+| 5.6 节的表 | `satisfaction_score.py`、`report_update.py`、`advisor_c.py`；N 一行见 `premium_shape_checks.py` 和 `verify_theory.py` |
+| 第 7 节单个 team 的表 | `verify_theory.py` |
 
-**本文数字的来源**。第 3.3、5.3、5.4、5.6 节的表来自 11-16 写的几个脚本（`advisor_c.py`、`report_update.py`、`sentiment_score.py`、`diminishing.py`、`adaptive_stop.py`，都依赖 `sp_check.py` 里的模型求解器）。这些脚本也还不在这个 repo。
+5.6 节 N 一行里 B=150 的 4.11 是当时直接用求解器算的，现有输出里没有这个预算，最接近的是 `premium_shape_checks.py` 给出的峰值（B=148.97 处 4.1132）。
 
 **外部来源**：
 
