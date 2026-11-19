@@ -25,3 +25,9 @@ Research code for *Orchestrating Agent Teams: Budget Allocation in Real-Time Bid
   exceeds one common number; learning takes budget from non-learners, balances it among learners and
   favours the marginal (lowest-value) learner. Code: `bandit_check/n_teams.py`.
   Verified for K = 50-400 with `bandit_check/run_dp_largeK.py`.
+* [`worklog/`](worklog/2026-11-19_agent_teams_etc_customer.md): dated records of recent work (in Chinese).
+  The 2026-11-19 entry covers 14-19 November: how the AI-agent-team model differs from the WITS (bidding)
+  version and from the earlier discussions in this repository, why the model is built as explore-then-commit
+  and why that structure fits AI agents, the customer reading of the evaluator (report, satisfaction score,
+  the cost of reading feedback), open reviewer questions and the status of the proofs. It is a record of
+  discussion, not a finished draft; the derivations and scripts it cites are not in this repository yet.
